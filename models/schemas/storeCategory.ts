@@ -37,16 +37,3 @@
 //   products_count?: number
 // }
 
-// export interface StoreCategoryFormData {
-//   category_id: string
-//   is_primary?: boolean
-//   img_url?: string
-//   display_name: string
-//   description?: string
-//   sort_order?: number
-//   is_active: boolean
-//   config?: StoreCategoryConfig
-// }
-
-// import type { Category } from "./store"
-// import type { Store } from "./store"

@@ -29,6 +29,7 @@ import {
 } from 'lucide-react';
 import React, { useEffect, useMemo, useState } from 'react'
 import { toast } from "sonner";
+import { CreateCategoryDialog } from '@/components/dashboard/category/create-category-dialog';
 
 type FilterType = 'all' | 'active' | 'inactive' | 'primary' | 'subcategory';
 type SortType = 'name-asc' | 'name-desc' | 'created-asc' | 'created-desc';
@@ -43,6 +44,10 @@ export default function Page() {
     const [sortType, setSortType] = useState<SortType>('name-asc');
     const [isRefreshing, setIsRefreshing] = useState(false);
     const [showFilters, setShowFilters] = useState(false);
+    const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+    const [selectedCategory, setSelectedCategory] = useState<any>(null);
+    const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+
 
     useEffect(() => {
         fetchCategories(true)
@@ -99,29 +104,7 @@ export default function Page() {
         return filtered;
     }, [categories, searchTerm, filterType, sortType]);
 
-    // Enhanced refresh function with better UX
-    const handleRefresh = async () => {
-        if (isRefreshing) return;
 
-        setIsRefreshing(true);
-        try {
-            await fetchCategories(true);
-            toast.success("Categories refreshed successfully", {
-                description: `${categories.length} categories loaded`
-            });
-        } catch (error) {
-            toast.error("Failed to refresh categories", {
-                description: "Please try again or check your connection"
-            });
-        } finally {
-            setIsRefreshing(false);
-        }
-    }
-
-    const handleCreateCategory = () => {
-        // Implementation for creating category
-        toast.info("Create category dialog would open here");
-    }
 
     // Clear all filters
     const clearFilters = () => {
@@ -142,6 +125,39 @@ export default function Page() {
 
     // Check if any filters are active
     const hasActiveFilters = searchTerm || filterType !== 'all' || sortType !== 'name-asc';
+
+
+    const handleRefresh = async () => {
+        if (isRefreshing) return;
+
+        setIsRefreshing(true);
+        try {
+            await fetchCategories(true);
+            toast.success("Categories refreshed successfully", {
+                description: `${categories.length} categories loaded`
+            });
+        } catch (error) {
+            toast.error("Failed to refresh categories", {
+                description: "Please try again or check your connection"
+            });
+        } finally {
+            setIsRefreshing(false);
+        }
+    }
+    const handleCreateCategory = () => {
+        setSelectedCategory(null);
+        setIsCreateDialogOpen(true);
+    };
+    const handleEditCategory = (category: any) => {
+        setSelectedCategory(category);
+        setIsEditDialogOpen(true);
+    };
+    const handleDialogClose = () => {
+        setIsCreateDialogOpen(false);
+        setIsEditDialogOpen(false);
+        setSelectedCategory(null);
+        // Data will be automatically updated through the store
+    };
 
     return (
         <div className="space-y-6 bg-background">
@@ -257,35 +273,39 @@ export default function Page() {
                             </CardDescription>
                         </div>
 
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setShowFilters(!showFilters)}
-                            className="w-full sm:w-auto"
-                        >
-                            <Filter className="mr-2 h-4 w-4" />
-                            {showFilters ? "Hide Filters" : "Show Filters"}
-                            {showFilters ? <EyeOff className="ml-2 h-4 w-4" /> : <Eye className="ml-2 h-4 w-4" />}
-                        </Button>
+                        <div className="space-y-2 flex justify-center text-center space-x-8">
+                            <div className='flex items-center'>
+                                {/* <label className="text-sm font-medium">Search</label> */}
+                                <div className="relative">
+                                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground  w-4" />
+                                    <Input
+                                        placeholder="Search categories..."
+                                        value={searchTerm}
+                                        onChange={(e) => setSearchTerm(e.target.value)}
+                                        className="pl-10"
+                                    />
+                                </div>
+                            </div>
+                            <Button
+                                variant="outline"
+                                size='default'
+                                onClick={() => setShowFilters(!showFilters)}
+                                className="w-full sm:w-auto"
+                            >
+                                <Filter className="mr-2 h-4 w-4" />
+                                {showFilters ? "Hide Filters" : "Show Filters"}
+                                {showFilters ? <EyeOff className="ml-2 h-4 w-4" /> : <Eye className="ml-2 h-4 w-4" />}
+                            </Button>
+                        </div>
+
+
                     </div>
 
                     {/* Enhanced Filter Section */}
                     {showFilters && (
                         <div className="mt-4 p-4 bg-muted/30 rounded-lg border space-y-4">
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                {/* Search */}
-                                <div className="space-y-2">
-                                    <label className="text-sm font-medium">Search</label>
-                                    <div className="relative">
-                                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-                                        <Input
-                                            placeholder="Search categories..."
-                                            value={searchTerm}
-                                            onChange={(e) => setSearchTerm(e.target.value)}
-                                            className="pl-10"
-                                        />
-                                    </div>
-                                </div>
+
 
                                 {/* Filter Type */}
                                 <div className="space-y-2">
@@ -416,6 +436,16 @@ export default function Page() {
                     />
                 </CardContent>
             </Card>
+            <CreateCategoryDialog
+                open={isCreateDialogOpen}
+                onOpenChange={handleDialogClose}
+            />
+
+            <CreateCategoryDialog
+                open={isEditDialogOpen}
+                onOpenChange={handleDialogClose}
+                category={selectedCategory}
+            />
         </div>
     )
 }

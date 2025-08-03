@@ -181,9 +181,19 @@ export function CategoriesTable({
                                     </div>
                                 </TableCell>
                                 <TableCell>
-                                    <Badge variant="outline">
-                                        {category.subcategories?.length || 0}
-                                    </Badge>
+                                    <div className="flex items-center">
+                                        <Badge variant="outline">
+                                            {category.subcategories?.length || 0}
+                                        </Badge>
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={() => handleViewSubcategories(category)}
+                                            className="h-8 w-8 p-0"
+                                        >
+                                            <Eye className="h-4 w-4" />
+                                        </Button>
+                                    </div>
                                 </TableCell>
                                 <TableCell>
                                     <Badge

@@ -2,23 +2,23 @@ interface iCategory {
 
 }
 
-interface FilterOption {
+interface iFilterOption {
     name: string
     type: "text" | "number" | "range" | "select" | "multiselect" | "boolean"
     options?: string[]
     is_required: boolean
 }
 
-interface AttributeOption {
+interface iAttributeOption {
     name: string
     type: string
     is_required: boolean
     default_value?: string
 }
 
-interface StoreCategoryConfig {
-    filters: FilterOption[]
-    attributes: AttributeOption[]
+interface iStoreCategoryConfig {
+    filters: iFilterOption[]
+    attributes: iAttributeOption[]
 }
 
 
@@ -43,7 +43,7 @@ interface iStoreCategory {
     description?: string
     sort_order: number
     is_active: boolean
-    config?: StoreCategoryConfig
+    config?: iStoreCategoryConfig
     created_at: string
     updated_at: string
     category_details?: iCategory
@@ -51,4 +51,33 @@ interface iStoreCategory {
     products_count?: number
     subcategories: iStoreCategory[]
     parent_id: string
+}
+
+interface iStoreCategoryFormData {
+    category_id: string
+    is_primary?: boolean
+    img_url?: string
+    display_name: string
+    description?: string
+    sort_order?: number
+    is_active: boolean
+    config?: iStoreCategoryConfig
+}
+
+interface iCategoryFormData {
+    name: string;
+    display_name: string;
+    description: string;
+    parent_id?: string;
+    sort_order: number;
+    is_active: boolean;
+    is_primary: boolean;
+    image_url?: string;
+    filters: iFilterOption[];
+    attributes: Array<{
+        name: string;
+        type: string;
+        is_required: boolean;
+        default_value?: string;
+    }>;
 }

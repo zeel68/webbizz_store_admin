@@ -17,7 +17,9 @@ interface CategoryState {
 
     fetchCategories: (force: boolean) => Promise<void>;
     fetchParentCategory: () => Promise<void>;
-
+    createCategory: (categoryData: iStoreCategoryFormData) => void
+    updateCategory: (id: string, categoryData: iStoreCategoryFormData) => void
+    deleteCategory: (id: string) => void
 }
 
 export const useCategoryStore = create<CategoryState>()(
@@ -72,6 +74,98 @@ export const useCategoryStore = create<CategoryState>()(
 
                 },
 
+                // Create Category
+                createCategory: async (categoryData: iStoreCategoryFormData) => {
+                    set({ loading: true, error: null });
+                    try {
+
+                        const response = await apiClient.post(
+                            "/store-admin/category",
+                            categoryData,
+                        ) as ApiResponse<any>;
+                        if (response.success) {
+                            const state = get();
+                            set({
+                                categories: [response.data, ...state.categories],
+                                loading: false,
+                            });
+                            return response.data;
+                        } else {
+                            const errorMsg =
+                                response.error || "Failed to create category";
+                            set({ error: errorMsg, loading: false });
+                            throw new Error(errorMsg);
+                        }
+                    } catch (error: any) {
+                        const errorMessage = error.message || "Failed to create category";
+                        set({ error: errorMessage, loading: false });
+                        throw new Error(errorMessage);
+                    }
+                },
+
+                // Update Category
+                updateCategory: async (
+                    id: string,
+                    categoryData: Partial<iStoreCategoryFormData>,
+                ) => {
+                    set({ loading: true, error: null });
+                    try {
+                        const response = await apiClient.put(
+                            `/store-admin/category/${id}`,
+                            categoryData,
+                        ) as ApiResponse<any>;
+                        if (response.success) {
+                            const state = get();
+                            set({
+                                categories: state.categories.map((c) =>
+                                    c._id === id ? { ...c, ...response.data } : c,
+                                ),
+
+                                loading: false,
+
+                            });
+
+                            return response.data;
+                        } else {
+                            const errorMsg =
+                                response.error || "Failed to update category";
+                            set({ error: errorMsg, loading: false });
+                            throw new Error(errorMsg);
+                        }
+                    } catch (error: any) {
+                        const errorMessage = error.message || "Failed to update category";
+                        set({ error: errorMessage, loading: false });
+                        throw new Error(errorMessage);
+                    }
+                },
+
+                // Delete Category
+                deleteCategory: async (id: string) => {
+                    set({ loading: true, error: null });
+                    try {
+
+                        const response = await apiClient.delete(
+                            `/store-admin/category/${id}`,
+                        ) as ApiResponse<any>;
+                        if (response.success) {
+                            const state = get();
+                            set({
+                                categories: state.categories.filter((c) => c._id !== id),
+                                loading: false,
+                            });
+
+                        } else {
+                            const errorMsg =
+                                response.error || "Failed to delete category";
+                            set({ error: errorMsg, loading: false });
+                            throw new Error(errorMsg);
+                        }
+                    } catch (error: any) {
+                        const errorMessage = error.message || "Failed to delete category";
+                        set({ error: errorMessage, loading: false });
+                        throw new Error(errorMessage);
+                    }
+                },
 
 
                 clearError: () => set({ error: null }),
