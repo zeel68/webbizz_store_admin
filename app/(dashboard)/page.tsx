@@ -5,6 +5,10 @@ import React from 'react'
 
 export default function Page() {
     const session = useSession();
+    // if (!session.data?.user) {
+    //     redirect("/login")
+    // }
+    console.log();
 
     console.log(session?.data?.expires == Date.now().toString())
 
