@@ -1,5 +1,5 @@
-export interface User {
-  _id: string
+interface iUser {
+  id: string
   store_id?: string
   name: string
   email: string
@@ -44,7 +44,7 @@ export interface User {
   updated_at: string
 }
 
-export interface UserFormData {
+interface UserFormData {
   name: string
   email: string
   phone_number: string

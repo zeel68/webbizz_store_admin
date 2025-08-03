@@ -4,6 +4,7 @@ import GoogleProvider from "next-auth/providers/google"
 import CredentialsProvider from "next-auth/providers/credentials"
 import ApiClient from "./lib/apiCalling"
 
+
 export const { handlers, signIn, signOut, auth } = NextAuth({
   providers: [
     GoogleProvider({
@@ -45,6 +46,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
             name: user.name,
             role: user.role_id,
             storeId: user.store_id ?? "",
+            image: user.profile_url,
             phoneNumber: user.phone_number ?? "",
             accessToken: loginData.accessToken,
             refreshToken: loginData.refreshToken,
