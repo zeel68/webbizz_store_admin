@@ -22,7 +22,7 @@ export const SocialLogin = ({ showGoogle, showFacebook, showTwitter }: SocialLog
 
     useEffect(() => {
         // Handle successful Google login
-        if (status === "authenticated" && session?.user && session?.accessToken) {
+        if (status === "authenticated" && session?.user && session.user.accessToken) {
             // Store in Zustand
             setUser(
                 {
@@ -31,7 +31,7 @@ export const SocialLogin = ({ showGoogle, showFacebook, showTwitter }: SocialLog
                     name: session.user.name || "",
                     role: session.user.role,
                 },
-                session.accessToken,
+                session.user.accessToken,
             )
 
             // Redirect based on role

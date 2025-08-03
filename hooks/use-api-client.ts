@@ -11,12 +11,12 @@ export function useApiClient() {
     return new ApiClient({
       headers: {
         "Content-Type": "application/json",
-        ...(session?.accessToken && {
-          Authorization: `Bearer ${session.accessToken}`,
+        ...(session?.user.accessToken && {
+          Authorization: `Bearer ${session.user.accessToken}`,
         }),
       },
     })
-  }, [session?.accessToken])
+  }, [session?.user.accessToken])
 
   return apiClient
 }

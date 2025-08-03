@@ -30,9 +30,9 @@ class ServerApiClient {
   private async getAuthHeaders() {
     try {
       const session = await auth()
-      if (session?.accessToken) {
+      if (session?.user.accessToken) {
         return {
-          Authorization: `Bearer ${session.accessToken}`,
+          Authorization: `Bearer ${session.user.accessToken}`,
         }
       }
     } catch (error) {
