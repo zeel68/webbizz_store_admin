@@ -1,4 +1,4 @@
-interface Store {
+interface iStore {
   _id: string
   name: string
   domain: string

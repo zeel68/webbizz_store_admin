@@ -17,8 +17,8 @@ interface CategoryState {
 
     fetchCategories: (force: boolean) => Promise<void>;
     fetchParentCategory: () => Promise<void>;
-    createCategory: (categoryData: iStoreCategoryFormData) => void
-    updateCategory: (id: string, categoryData: iStoreCategoryFormData) => void
+    createCategory: (categoryData: iCategoryFormData) => void
+    updateCategory: (id: string, categoryData: iCategoryFormData) => void
     deleteCategory: (id: string) => void
 }
 
@@ -75,7 +75,7 @@ export const useCategoryStore = create<CategoryState>()(
                 },
 
                 // Create Category
-                createCategory: async (categoryData: iStoreCategoryFormData) => {
+                createCategory: async (categoryData: iCategoryFormData) => {
                     set({ loading: true, error: null });
                     try {
 
@@ -106,7 +106,7 @@ export const useCategoryStore = create<CategoryState>()(
                 // Update Category
                 updateCategory: async (
                     id: string,
-                    categoryData: Partial<iStoreCategoryFormData>,
+                    categoryData: Partial<iCategoryFormData>,
                 ) => {
                     set({ loading: true, error: null });
                     try {

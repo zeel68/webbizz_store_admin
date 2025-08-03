@@ -30,6 +30,7 @@ import { toast } from "sonner";
 import ImageUpload from "@/components/shared/image-upload";
 import { useCategoryStore } from "@/store/categoryStore";
 
+
 interface CreateCategoryDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -37,6 +38,8 @@ interface CreateCategoryDialogProps {
   onCreate?: (category: iStoreCategory) => void;
   onUpdate?: (category: iStoreCategory) => void;
 }
+// ======= END INTERFACES =======
+
 export function CreateCategoryDialog({
   open,
   onOpenChange,
@@ -55,13 +58,15 @@ export function CreateCategoryDialog({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedImages, setSelectedImages] = useState<File[]>([]);
   const [newFilterOption, setNewFilterOption] = useState("");
-  const [newFilter, setNewFilter] = useState({
+
+  const [newFilter, setNewFilter] = useState<iFilterOption>({
     name: "",
     type: "text",
-    options: [] as string[],
+    options: [],
     is_required: false,
   });
-  const [newAttribute, setNewAttribute] = useState({
+
+  const [newAttribute, setNewAttribute] = useState<iAttributeOption>({
     name: "",
     type: "text",
     is_required: false,
@@ -98,7 +103,10 @@ export function CreateCategoryDialog({
         is_active: category.is_active !== false,
         is_primary: category.is_primary || false,
         image_url: category.image_url || category.img_url || "",
-        filters: category.config?.filters || [],
+        filters: (category.config?.filters || []).map(f => ({
+          ...f,
+          options: f.options ? [...f.options] : []
+        })),
         attributes: category.config?.attributes || [],
       });
       setSelectedImages([]);
@@ -118,6 +126,8 @@ export function CreateCategoryDialog({
       setSelectedImages([]);
     }
   }, [category, open]);
+
+  const filteredCategories = categories.filter((tcategory) => tcategory._id != category?._id)
 
   const uploadToCloudinary = async (file: File): Promise<string> => {
     const formDataUpload = new FormData();
@@ -167,7 +177,6 @@ export function CreateCategoryDialog({
 
       const categoryData = {
         display_name:
-          formData.name ||
           formData.display_name.toLowerCase().replace(/\s+/g, "_"),
         description: formData.description,
         parent_id: formData.parent_id || null,
@@ -181,15 +190,15 @@ export function CreateCategoryDialog({
           attributes: formData.attributes,
         },
       };
-      console.log(categoryData);
+
       if (category) {
-        const result = await updateCategory(category._id, categoryData);
+        const result = await updateCategory(category._id, categoryData as any);
         toast.success("Category updated successfully");
-        if (onUpdate) onUpdate(result);
+        // if (onUpdate) onUpdate();
       } else {
-        const result = await createCategory(categoryData);
+        const result = await createCategory(categoryData as any);
         toast.success("Category created successfully");
-        if (onCreate) onCreate(result);
+        // if (onCreate) onCreate();
       }
 
       onOpenChange(false);
@@ -359,7 +368,7 @@ export function CreateCategoryDialog({
                         <div className="space-y-1">
                           <Label htmlFor="parent_id">Parent Category</Label>
                           <Select
-                            value={formData.parent_id}
+                            value={formData.parent_id || "none"}
                             onValueChange={(value) =>
                               setFormData((prev) => ({
                                 ...prev,
@@ -374,7 +383,7 @@ export function CreateCategoryDialog({
                               <SelectItem value="none">
                                 No Parent (Root Category)
                               </SelectItem>
-                              {categories.map((cat) => (
+                              {filteredCategories.map((cat) => (
                                 <SelectItem key={cat._id} value={cat._id}>
                                   {cat.display_name}
                                 </SelectItem>
@@ -571,7 +580,10 @@ export function CreateCategoryDialog({
                           <Select
                             value={newFilter.type}
                             onValueChange={(value) =>
-                              setNewFilter((prev) => ({ ...prev, type: value }))
+                              setNewFilter((prev) => ({
+                                ...prev,
+                                type: value as iFilterOption["type"]
+                              }))
                             }
                           >
                             <SelectTrigger className="h-8">
@@ -774,7 +786,7 @@ export function CreateCategoryDialog({
                           Default Value (Optional)
                         </Label>
                         <Input
-                          value={newAttribute.default_value}
+                          value={newAttribute.default_value || ""}
                           onChange={(e) =>
                             setNewAttribute((prev) => ({
                               ...prev,

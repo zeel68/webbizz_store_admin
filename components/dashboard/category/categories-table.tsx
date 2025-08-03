@@ -30,6 +30,7 @@ import {
     Tag,
 } from "lucide-react";
 import { toast } from "sonner";
+import { CategoryDetailsDialog } from "./category-details";
 
 
 
@@ -320,14 +321,14 @@ export function CategoriesTable({
                 </Table>
             </div>
 
-            {/* <CategoryDetailsDialog
+            <CategoryDetailsDialog
                 category={selectedCategory}
                 open={isDetailsDialogOpen}
                 onOpenChange={setIsDetailsDialogOpen}
                 onEdit={handleEdit}
                 onAddProduct={handleAddProduct}
                 onAddSubcategory={handleAddSubcategory}
-            /> */}
+            />
 
             {/* <SubcategoryDetailsDialog
                 open={subcatModalOpen}

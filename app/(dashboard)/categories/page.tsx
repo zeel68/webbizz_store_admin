@@ -57,7 +57,7 @@ export default function Page() {
     const filteredAndSortedCategories = useMemo(() => {
         let filtered = categories.filter((category) => {
             // Search filter
-            const matchesSearch = category.display_name
+            const matchesSearch = category?.display_name
                 .toLowerCase()
                 .includes(searchTerm.toLowerCase()) ||
                 (category.description &&
@@ -156,6 +156,7 @@ export default function Page() {
         setIsCreateDialogOpen(false);
         setIsEditDialogOpen(false);
         setSelectedCategory(null);
+        
         // Data will be automatically updated through the store
     };
 
@@ -430,7 +431,7 @@ export default function Page() {
                     <CategoriesTable
                         categories={filteredAndSortedCategories}
                         isLoading={loading}
-                    // onEdit={handleEditCategory}
+                        onEdit={handleEditCategory}
                     // onAddProduct={handleAddProduct}
                     // onAddSubcategory={handleAddSubcategory}
                     />
