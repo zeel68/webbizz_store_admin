@@ -21,7 +21,7 @@ interface ApiResponse<T> {
 
 class ApiClient {
   mode = process.env.NODE_ENV || "production";
-  private baseURL: string = "http://localhost:5050/api";
+  private baseURL: string = "https://dhaneri-backend-7nkti8s6z-zeshs-projects.vercel.app/api";
   private axiosInstance: AxiosInstance;
 
   constructor(config?: AxiosRequestConfig) {
