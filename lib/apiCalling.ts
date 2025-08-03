@@ -23,7 +23,6 @@ class ApiClient {
   mode = process.env.NODE_ENV || "production";
   private baseURL: string = "https://dhaneri-backend-7nkti8s6z-zeshs-projects.vercel.app/api";
   private axiosInstance: AxiosInstance;
-
   constructor(config?: AxiosRequestConfig) {
     this.axiosInstance = axios.create({
       baseURL: this.baseURL,

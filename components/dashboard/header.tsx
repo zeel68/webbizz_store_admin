@@ -68,7 +68,7 @@ export function StoreAdminHeader() {
     const ThemeIcon = getThemeIcon()
 
     return (
-        <header className="flex h-16 shrink-0 items-center gap-2 border-b border-border backdrop-blur-sm px-4 bg-background/80">
+        <header className="flex h-16 shrink-0 items-center gap-2 border-b border-border backdrop-blur-sm px-4 bg-background">
             <SidebarTrigger className="-ml-1 text-foreground hover:bg-accent" />
             <Separator orientation="vertical" className="mr-2 h-4 bg-border" />
 
