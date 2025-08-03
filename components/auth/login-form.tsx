@@ -4,7 +4,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
-import { signIn } from "next-auth/react";
+import { signIn, getSession } from "next-auth/react";
 
 import type * as z from "zod";
 import { LoginSchema } from "@/models/schemas";
@@ -47,32 +47,37 @@ export const LoginForm = () => {
         });
 
         if (result?.error) {
-          setError(error);
-          console.log(result?.error);
+          console.error("Sign-in error:", result.error);
+          setError("Invalid credentials or server error.");
           return;
         }
 
         if (result?.ok) {
-          // Get the session to access user data and tokens
-          const response = await fetch("/api/auth/session");
-          const session = await response.json();
+          const session = await getSession();
 
-          if (session?.user && session?.accessToken) {
-            // Store in Zustand
+          if (session?.user) {
+            const { id, email, name, role, accessToken } = session.user;
+
+            if (!accessToken) {
+              setError("No access token returned from session.");
+              return;
+            }
+
+            // Store user in Zustand
             setUser(
               {
-                id: session.user.id,
-                email: session.user.email,
-                name: session.user.name,
-                role: session.user.role,
+                id,
+                email: email ?? "",
+                name: name ?? "",
+                role,
               },
-              session.accessToken,
+              accessToken
             );
 
             setSuccess("Logged in successfully!");
 
             // Redirect based on role
-            switch (session.user.role) {
+            switch (role) {
               case ADMIN_ROLE_ID:
                 router.push("/prod");
                 break;
@@ -84,9 +89,11 @@ export const LoginForm = () => {
                 router.push("/");
                 break;
             }
+          } else {
+            setError("Failed to retrieve session after login.");
           }
         }
-      } catch (err: any) {
+      } catch (err) {
         console.error("Login error:", err);
         setError("Login failed. Please try again.");
       }
