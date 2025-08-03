@@ -38,7 +38,6 @@ interface CreateCategoryDialogProps {
   onCreate?: (category: iStoreCategory) => void;
   onUpdate?: (category: iStoreCategory) => void;
 }
-// ======= END INTERFACES =======
 
 export function CreateCategoryDialog({
   open,
