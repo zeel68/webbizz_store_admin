@@ -80,12 +80,6 @@ const navigation = [
     name: "Orders",
     href: "/orders",
     icon: ShoppingCart,
-    children: [
-      { name: "All Orders", href: "/orders" },
-      { name: "Pending", href: "/orders/pending" },
-      { name: "Completed", href: "/orders/completed" },
-      { name: "Returns", href: "/orders/returns" },
-    ],
   },
   {
     name: "Customers",
