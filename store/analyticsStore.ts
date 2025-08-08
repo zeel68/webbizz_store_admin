@@ -45,7 +45,7 @@ interface iAnalyticsState {
 const session = await getSession();
 const apiClient = new ApiClient({
     headers: {
-        Authorization: `Bearer ₹{session?.user.accessToken}`,
+        Authorization: `Bearer ${session?.user.accessToken}`,
     },
 });
 export const useAnalyticsStore = create<iAnalyticsState>()(
@@ -90,7 +90,7 @@ export const useAnalyticsStore = create<iAnalyticsState>()(
                 set({ loading: true, error: null })
                 try {
                     const queryParams = new URLSearchParams(params as Record<string, string>)
-                    const response = await apiClient.get(`/store-admin/analytics/sales?₹{queryParams}`) as ApiResponse<any>
+                    const response = await apiClient.get(`/store-admin/analytics/sales?${queryParams}`) as ApiResponse<any>
                     const data = response
 
                     if (data.success) {
@@ -109,7 +109,7 @@ export const useAnalyticsStore = create<iAnalyticsState>()(
                 set({ loading: true, error: null })
                 try {
                     const queryParams = new URLSearchParams(params as Record<string, string>)
-                    const response = await apiClient.get(`/store-admin/analytics/products/top-selling?₹{queryParams}`) as ApiResponse<any>
+                    const response = await apiClient.get(`/store-admin/analytics/products/top-selling?${queryParams}`) as ApiResponse<any>
                     const data = response
 
                     if (data.success) {
@@ -128,7 +128,7 @@ export const useAnalyticsStore = create<iAnalyticsState>()(
                 set({ loading: true, error: null })
                 try {
                     const queryParams = new URLSearchParams(params as Record<string, string>)
-                    const response = await apiClient.get(`/store-admin/analytics/customers?₹{queryParams}`) as ApiResponse<any>
+                    const response = await apiClient.get(`/store-admin/analytics/customers?${queryParams}`) as ApiResponse<any>
                     const data = response
 
                     if (data.success) {
@@ -166,7 +166,7 @@ export const useAnalyticsStore = create<iAnalyticsState>()(
                 set({ loading: true, error: null })
                 try {
                     const queryParams = new URLSearchParams(params as Record<string, string>)
-                    const response = await apiClient.get(`/store-admin/analytics/advanced/customer-behavior?₹{queryParams}`) as ApiResponse<any>
+                    const response = await apiClient.get(`/store-admin/analytics/advanced/customer-behavior?${queryParams}`) as ApiResponse<any>
                     const data = response
 
                     if (data.success) {
@@ -185,7 +185,7 @@ export const useAnalyticsStore = create<iAnalyticsState>()(
                 set({ loading: true, error: null })
                 try {
                     const queryParams = new URLSearchParams(params as Record<string, string>)
-                    const response = await apiClient.get(`/store-admin/analytics/advanced/product-performance?₹{queryParams}`) as ApiResponse<any>
+                    const response = await apiClient.get(`/store-admin/analytics/advanced/product-performance?${queryParams}`) as ApiResponse<any>
                     const data = response
 
                     if (data.success) {
@@ -204,7 +204,7 @@ export const useAnalyticsStore = create<iAnalyticsState>()(
                 set({ loading: true, error: null })
                 try {
                     const queryParams = new URLSearchParams(params as Record<string, string>)
-                    const response = await apiClient.get(`/store-admin/analytics/advanced/geographic?₹{queryParams}`) as ApiResponse<any>
+                    const response = await apiClient.get(`/store-admin/analytics/advanced/geographic?${queryParams}`) as ApiResponse<any>
                     const data = response
 
                     if (data.success) {
@@ -241,7 +241,7 @@ export const useAnalyticsStore = create<iAnalyticsState>()(
                 set({ loading: true, error: null })
                 try {
                     const queryParams = new URLSearchParams(params as Record<string, string>)
-                    const response = await apiClient.get(`/store-admin/analytics/advanced/conversion-funnel?₹{queryParams}`) as ApiResponse<any>
+                    const response = await apiClient.get(`/store-admin/analytics/advanced/conversion-funnel?${queryParams}`) as ApiResponse<any>
                     const data = response
 
                     if (data.success) {

@@ -35,7 +35,7 @@ export function ProductsTable({
     const [deletingId, setDeletingId] = useState<string | null>(null)
 
     const handleDelete = async (id: string, name: string) => {
-        if (confirm(`Are you sure you want to delete the product "₹{name}"?`)) {
+        if (confirm(`Are you sure you want to delete the product "${name}"?`)) {
             setDeletingId(id)
             try {
                 await deleteProduct(id)
@@ -53,7 +53,7 @@ export function ProductsTable({
         if (onEdit) {
             onEdit(product)
         } else {
-            router.push(`/products/add?id=₹{product._id}`)
+            router.push(`/products/add?id=${product._id}`)
         }
     }
 

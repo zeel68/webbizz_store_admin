@@ -57,7 +57,7 @@ export function CouponsTable({ coupons, isLoading }: CouponTableProps) {
     try {
       await updateCoupon(coupon._id, { is_active: !coupon.is_active });
       toast.success(
-        `Coupon ₹{coupon.is_active ? "deactivated" : "activated"} successfully`
+        `Coupon ${coupon.is_active ? "deactivated" : "activated"} successfully`
       );
     } catch (error) {
       toast.error(`Failed to update coupon status`);
@@ -87,7 +87,7 @@ export function CouponsTable({ coupons, isLoading }: CouponTableProps) {
   };
 
   const handleDuplicateCoupon = async (coupon: any) => {
-    const newCode = `₹{coupon.code}_COPY_₹{Date.now().toString().slice(-4)}`;
+    const newCode = `${coupon.code}_COPY_${Date.now().toString().slice(-4)}`;
     try {
       await duplicateCoupon(coupon._id, newCode);
       toast.success("Coupon duplicated successfully");
@@ -171,7 +171,7 @@ export function CouponsTable({ coupons, isLoading }: CouponTableProps) {
   const formatDiscountValue = (coupon: any) => {
     switch (coupon.type) {
       case "percentage":
-        return `₹{coupon.value}%`;
+        return `${coupon.value}%`;
       case "fixed":
         return formatCurrency(coupon.value);
       case "free_shipping":

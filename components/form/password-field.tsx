@@ -61,7 +61,7 @@ export default function PasswordField() {
                         type={isVisible ? "text" : "password"}
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
-                        aria-describedby={`₹{id}-description`}
+                        aria-describedby={`${id}-description`}
                     />
                     <button
                         className="text-muted-foreground/80 hover:text-foreground focus-visible:border-ring focus-visible:ring-ring/50 absolute inset-y-0 end-0 flex h-full w-9 items-center justify-center rounded-e-md transition-[color,box-shadow] outline-none focus:z-10 focus-visible:ring-[3px] disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50"
@@ -90,14 +90,14 @@ export default function PasswordField() {
                 aria-label="Password strength"
             >
                 <div
-                    className={`h-full ₹{getStrengthColor(strengthScore)} transition-all duration-500 ease-out`}
-                    style={{ width: `₹{(strengthScore / 4) * 100}%` }}
+                    className={`h-full ${getStrengthColor(strengthScore)} transition-all duration-500 ease-out`}
+                    style={{ width: `${(strengthScore / 4) * 100}%` }}
                 ></div>
             </div>
 
             {/* Password strength description */}
             <p
-                id={`₹{id}-description`}
+                id={`${id}-description`}
                 className="text-foreground mb-2 text-sm font-medium"
             >
                 {getStrengthText(strengthScore)}. Must contain:
@@ -121,7 +121,7 @@ export default function PasswordField() {
                             />
                         )}
                         <span
-                            className={`text-xs ₹{req.met ? "text-emerald-600" : "text-muted-foreground"}`}
+                            className={`text-xs ${req.met ? "text-emerald-600" : "text-muted-foreground"}`}
                         >
                             {req.text}
                             <span className="sr-only">

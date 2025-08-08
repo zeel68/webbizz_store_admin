@@ -581,7 +581,7 @@ export function CategoryDetailsDialog({
                                                                             </span>
                                                                         </div>
                                                                         <div className="flex items-center gap-2">
-                                                                            <div className={`flex items-center gap-1 text-sm ₹{stockStatus.color}`}>
+                                                                            <div className={`flex items-center gap-1 text-sm ${stockStatus.color}`}>
                                                                                 <StockIcon className="h-4 w-4" />
                                                                                 <span>{product.stock?.quantity || 0}</span>
                                                                             </div>
@@ -591,7 +591,7 @@ export function CategoryDetailsDialog({
                                                                                 className="h-8 w-8 p-0"
                                                                                 onClick={() => {
                                                                                     // Navigate to product details
-                                                                                    window.open(`/products/₹{product._id}`, '_blank');
+                                                                                    window.open(`/products/${product._id}`, '_blank');
                                                                                 }}
                                                                             >
                                                                                 <ExternalLink className="h-4 w-4" />

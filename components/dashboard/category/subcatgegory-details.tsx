@@ -97,7 +97,7 @@ export function SubcategoryProductsDialog({
 
             await Promise.all(promises)
 
-            toast.success(`Successfully assigned ₹{selectedProducts.size} product(s) to subcategory`)
+            toast.success(`Successfully assigned ${selectedProducts.size} product(s) to subcategory`)
 
             // Refresh categories to update product counts
             await fetchCategories()
@@ -138,14 +138,14 @@ export function SubcategoryProductsDialog({
                                     {category.subcategories.map((subcategory: any) => (
                                         <div
                                             key={subcategory._id}
-                                            className={`p-3 border rounded-lg cursor-pointer transition-colors ₹{selectedSubcategory === subcategory._id
+                                            className={`p-3 border rounded-lg cursor-pointer transition-colors ${selectedSubcategory === subcategory._id
                                                 ? "border-primary bg-primary/5"
                                                 : "border-muted hover:border-primary/50"
                                                 }`}
                                             onClick={() => setSelectedSubcategory(subcategory._id)}
                                         >
                                             <div className="flex items-center space-x-2">
-                                                <div className={`w-4 h-4 rounded-full border-2 ₹{selectedSubcategory === subcategory._id
+                                                <div className={`w-4 h-4 rounded-full border-2 ${selectedSubcategory === subcategory._id
                                                     ? "border-primary bg-primary"
                                                     : "border-muted-foreground"
                                                     }`}>
@@ -231,7 +231,7 @@ export function SubcategoryProductsDialog({
                                     {filteredProducts.map((product) => (
                                         <div
                                             key={product._id}
-                                            className={`flex items-center space-x-4 p-4 border rounded-lg cursor-pointer transition-colors ₹{selectedProducts.has(product._id)
+                                            className={`flex items-center space-x-4 p-4 border rounded-lg cursor-pointer transition-colors ${selectedProducts.has(product._id)
                                                 ? "border-primary bg-primary/5"
                                                 : "border-muted hover:border-primary/50"
                                                 }`}

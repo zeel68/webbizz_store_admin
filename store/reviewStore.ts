@@ -22,7 +22,7 @@ interface ReviewState {
 const session = await getSession();
 const apiClient = new ApiClient({
   headers: {
-    Authorization: `Bearer ₹{session?.user.accessToken}`,
+    Authorization: `Bearer ${session?.user.accessToken}`,
   },
 });
 
@@ -43,7 +43,7 @@ export const useReviewStore = create<ReviewState>()(
           });
 
           const response = (await apiClient.get(
-            `/store-admin/reviews?₹{searchParams.toString()}`
+            `/store-admin/reviews?${searchParams.toString()}`
           )) as ApiResponse<any>;
           console.log(response);
 
@@ -74,7 +74,7 @@ export const useReviewStore = create<ReviewState>()(
         set({ loading: true, error: null });
         try {
           const response = (await apiClient.put(
-            `/store-admin/reviews/₹{id}/status`,
+            `/store-admin/reviews/${id}/status`,
             {
               status,
               admin_notes: adminNotes,
@@ -114,7 +114,7 @@ export const useReviewStore = create<ReviewState>()(
         set({ loading: true, error: null });
         try {
           const response = await apiClient.post(
-            `/store-admin/reviews/₹{id}/reply`,
+            `/store-admin/reviews/${id}/reply`,
             { reply }
           );
           if (response.success) {
@@ -149,7 +149,7 @@ export const useReviewStore = create<ReviewState>()(
         set({ loading: true, error: null });
         try {
           const response = (await apiClient.delete(
-            `/store-admin/reviews/₹{id}`
+            `/store-admin/reviews/${id}`
           )) as ApiResponse<any>;
           if (response.success) {
             set((state) => ({

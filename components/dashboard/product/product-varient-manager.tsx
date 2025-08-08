@@ -107,7 +107,7 @@
 
 //     const getVariantDisplayName = (attributes: Record<string, string>) => {
 //         return Object.entries(attributes)
-//             .map(([key, value]) => `₹{key}: ₹{value}`)
+//             .map(([key, value]) => `${key}: ${value}`)
 //             .join(', ')
 //     }
 

@@ -12,7 +12,7 @@ export function useApiClient() {
       headers: {
         "Content-Type": "application/json",
         ...(session?.user.accessToken && {
-          Authorization: `Bearer ₹{session.user.accessToken}`,
+          Authorization: `Bearer ${session.user.accessToken}`,
         }),
       },
     })

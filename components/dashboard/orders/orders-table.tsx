@@ -217,7 +217,7 @@ export function OrdersTable({ orders, isLoading }: OrderTableProps) {
                     </TableCell>
                     <TableCell>
                       <Badge
-                        className={`flex items-center gap-1 w-fit ₹{paymentStatusColors[order.payment_status as keyof typeof paymentStatusColors] ||
+                        className={`flex items-center gap-1 w-fit ${paymentStatusColors[order.payment_status as keyof typeof paymentStatusColors] ||
                           "bg-gray-100 text-gray-800"
                           }`}
                       >
@@ -228,7 +228,7 @@ export function OrdersTable({ orders, isLoading }: OrderTableProps) {
                     </TableCell>
                     <TableCell>
                       <Badge
-                        className={`flex items-center gap-1 w-fit ₹{statusColors[order.status as keyof typeof statusColors] ||
+                        className={`flex items-center gap-1 w-fit ${statusColors[order.status as keyof typeof statusColors] ||
                           "bg-gray-100 text-gray-800"
                           }`}
                       >
@@ -337,13 +337,13 @@ export function OrdersTable({ orders, isLoading }: OrderTableProps) {
                   <div className="grid grid-cols-2 gap-4 text-sm">
                     <div>
                       <strong>Order Status:</strong>
-                      <Badge className={`ml-2 ₹{statusColors[viewingOrder.status as keyof typeof statusColors] || "bg-gray-100 text-gray-800"}`}>
+                      <Badge className={`ml-2 ${statusColors[viewingOrder.status as keyof typeof statusColors] || "bg-gray-100 text-gray-800"}`}>
                         {viewingOrder.status || "pending"}
                       </Badge>
                     </div>
                     <div>
                       <strong>Payment Status:</strong>
-                      <Badge className={`ml-2 ₹{paymentStatusColors[viewingOrder.payment_status as keyof typeof paymentStatusColors] || "bg-gray-100 text-gray-800"}`}>
+                      <Badge className={`ml-2 ${paymentStatusColors[viewingOrder.payment_status as keyof typeof paymentStatusColors] || "bg-gray-100 text-gray-800"}`}>
                         {viewingOrder.payment_status || "pending"}
                       </Badge>
                     </div>

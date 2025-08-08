@@ -35,7 +35,7 @@ class ApiClient {
     //     try {
     //       const session = await getSession()
     //       if (session?.accessToken) {
-    //         config.headers.Authorization = `Bearer ₹{session.accessToken}`
+    //         config.headers.Authorization = `Bearer ${session.accessToken}`
     //       }
     //     } catch (error) {
     //       console.warn("Failed to get session for API request:", error)

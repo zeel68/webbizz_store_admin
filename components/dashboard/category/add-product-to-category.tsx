@@ -145,7 +145,7 @@ export function AddProductsToCategoryDialog({
             // await Promise.all(promises);
 
             toast.success(
-                `₹{selectedProducts.length} product(s) added to ₹{category.display_name}`
+                `${selectedProducts.length} product(s) added to ${category.display_name}`
             );
 
             // Clear selection and close dialog
@@ -186,7 +186,7 @@ export function AddProductsToCategoryDialog({
         onToggle: (productId: string) => void;
     }) => (
         <Card
-            className={`transition-all cursor-pointer hover:shadow-md ₹{isSelected ? "ring-2 ring-primary" : ""
+            className={`transition-all cursor-pointer hover:shadow-md ${isSelected ? "ring-2 ring-primary" : ""
                 }`}
             onClick={() => onToggle(product._id)}
         >
@@ -213,7 +213,7 @@ export function AddProductsToCategoryDialog({
                                     {product.name}
                                 </h4>
                                 <p className="text-xs text-muted-foreground truncate mb-2">
-                                    {product.brand && `₹{product.brand} • `}
+                                    {product.brand && `${product.brand} • `}
                                     SKU: {product.sku || "N/A"}
                                 </p>
                                 <div className="flex items-center gap-2 flex-wrap">
@@ -429,7 +429,7 @@ export function AddProductsToCategoryDialog({
                             >
                                 {isSubmitting && <Loader2 className="h-4 w-4 animate-spin" />}
                                 <Plus className="h-4 w-4" />
-                                Add {selectedProducts.length > 0 ? `₹{selectedProducts.length} ` : ""}
+                                Add {selectedProducts.length > 0 ? `${selectedProducts.length} ` : ""}
                                 Product{selectedProducts.length !== 1 ? "s" : ""}
                             </Button>
                         </div>

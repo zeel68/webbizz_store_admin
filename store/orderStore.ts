@@ -20,7 +20,7 @@ interface OrderState {
 const session = await getSession();
 const apiClient = new ApiClient({
   headers: {
-    Authorization: `Bearer ₹{session?.user.accessToken}`,
+    Authorization: `Bearer ${session?.user.accessToken}`,
   },
 });
 export const useOrderStore = create<OrderState>()(
@@ -44,7 +44,7 @@ export const useOrderStore = create<OrderState>()(
           });
 
           const response = await apiClient.get(
-            `/store-admin/orders?₹{searchParams.toString()}`
+            `/store-admin/orders?${searchParams.toString()}`
           ) as ApiResponse<any>;
 
           if (response.success) {
@@ -79,7 +79,7 @@ export const useOrderStore = create<OrderState>()(
 
 
           const response = await apiClient.put(
-            `/store-admin/orders/₹{orderId}/status`,
+            `/store-admin/orders/${orderId}/status`,
             {
               status,
               tracking_number: trackingNumber,

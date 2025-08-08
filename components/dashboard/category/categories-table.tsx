@@ -66,7 +66,7 @@ export function CategoriesTable({
         useState<iStoreCategory | null>(null);
 
     const handleDelete = async (id: string, name: string) => {
-        if (confirm(`Are you sure you want to delete the category "₹{name}"?`)) {
+        if (confirm(`Are you sure you want to delete the category "${name}"?`)) {
             setDeletingId(id);
             try {
                 await deleteCategory(id);

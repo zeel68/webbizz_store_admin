@@ -71,7 +71,7 @@ export function ProductDetailsDialog({
 
         const remainingStars = 5 - Math.ceil(rating)
         for (let i = 0; i < remainingStars; i++) {
-            stars.push(<Star key={`empty-₹{i}`} className="h-4 w-4 text-gray-300" />)
+            stars.push(<Star key={`empty-${i}`} className="h-4 w-4 text-gray-300" />)
         }
 
         return stars
@@ -125,7 +125,7 @@ export function ProductDetailsDialog({
                                                     <div key={index} className="aspect-square rounded-lg overflow-hidden border">
                                                         <img
                                                             src={image || "/placeholder.svg"}
-                                                            alt={`₹{product.name} ₹{index + 1}`}
+                                                            alt={`${product.name} ${index + 1}`}
                                                             className="w-full h-full object-cover"
                                                         />
                                                     </div>

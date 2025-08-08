@@ -106,7 +106,7 @@ export function ReviewsTable({ reviews, isLoading }: ReviewsTableProps) {
         {[1, 2, 3, 4, 5].map((star) => (
           <Star
             key={star}
-            className={`h-4 w-4 ₹{star <= rating ? "text-yellow-400 fill-current" : "text-gray-300"
+            className={`h-4 w-4 ${star <= rating ? "text-yellow-400 fill-current" : "text-gray-300"
               }`}
           />
         ))}
@@ -181,7 +181,7 @@ export function ReviewsTable({ reviews, isLoading }: ReviewsTableProps) {
                     <AvatarImage
                       src={
                         review.customer_avatar ||
-                        `https://avatar.vercel.sh/₹{review.user}`
+                        `https://avatar.vercel.sh/${review.user}`
                       }
                     />
                     <AvatarFallback>
@@ -211,7 +211,7 @@ export function ReviewsTable({ reviews, isLoading }: ReviewsTableProps) {
                 </div>
               </TableCell>
               <TableCell>
-                <div className={`₹{getStatusColor(review.status)} rounded-full px-3 py-1 text-xs font-medium max-w-20`}>
+                <div className={`${getStatusColor(review.status)} rounded-full px-3 py-1 text-xs font-medium max-w-20`}>
                   {review.status === "published" && "Approved"}
                   {review.status === "pending" && "Pending"}
                   {review.status === "hidden" && "Hidden"}

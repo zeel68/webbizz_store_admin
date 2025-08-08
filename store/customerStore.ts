@@ -46,7 +46,7 @@ const initializeStore = async () => {
                         });
 
                         const response = (await apiClient.get(
-                            `/store-admin/customers?₹{searchParams.toString()}`
+                            `/store-admin/customers?${searchParams.toString()}`
                         )) as ApiResponse<any>;
                         if (response.success) {
                             set({
@@ -71,7 +71,7 @@ const initializeStore = async () => {
                     set({ loading: true, error: null });
                     try {
                         const response = (await apiClient.put(
-                            `/store-admin/customers/₹{id}`,
+                            `/store-admin/customers/${id}`,
                             data
                         )) as ApiResponse<any>;
                         if (response.success) {
@@ -106,7 +106,7 @@ const initializeStore = async () => {
                     set({ loading: true, error: null });
                     try {
                         const response = (await apiClient.delete(
-                            `/store-admin/customers/₹{id}`
+                            `/store-admin/customers/${id}`
                         )) as ApiResponse<any>;
                         if (response.success) {
                             set((state) => ({

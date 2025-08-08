@@ -59,7 +59,7 @@ interface HomepageState {
 const session = await getSession();
 const apiClient = new ApiClient({
     headers: {
-        Authorization: `Bearer ₹{session?.user.accessToken}`,
+        Authorization: `Bearer ${session?.user.accessToken}`,
     },
 });
 
@@ -158,7 +158,7 @@ export const useHomepageStore = create<HomepageState>()(
                 set({ heroSlidesLoading: true, error: null })
                 try {
 
-                    const response = await apiClient.put(`/store-admin/homepage/hero/₹{id}`, slideData) as ApiResponse<any>
+                    const response = await apiClient.put(`/store-admin/homepage/hero/${id}`, slideData) as ApiResponse<any>
 
                     const data = response
                     console.log(response);
@@ -184,7 +184,7 @@ export const useHomepageStore = create<HomepageState>()(
             deleteHeroSlide: async (id: string) => {
                 set({ heroSlidesLoading: true, error: null })
                 try {
-                    const response = await apiClient.delete(`/store-admin/homepage/hero-slides/₹{id}`) as ApiResponse<any>
+                    const response = await apiClient.delete(`/store-admin/homepage/hero-slides/${id}`) as ApiResponse<any>
 
                     const data = await response.data
 
@@ -286,7 +286,7 @@ export const useHomepageStore = create<HomepageState>()(
             removeTrendingCategory: async (id: string) => {
                 set({ trendingCategoriesLoading: true, error: null })
                 try {
-                    const response = await apiClient.delete(`/store-admin/homepage/trendingCategory/₹{id}`) as ApiResponse<any>
+                    const response = await apiClient.delete(`/store-admin/homepage/trendingCategory/${id}`) as ApiResponse<any>
 
                     const data = response
 
@@ -356,7 +356,7 @@ export const useHomepageStore = create<HomepageState>()(
             updateTrendingProduct: async (id: string, displayOrder: number) => {
                 set({ trendingProductsLoading: true, error: null })
                 try {
-                    const response = await fetch(`/store-admin/homepage/trending-products/₹{id}`, {
+                    const response = await fetch(`/store-admin/homepage/trending-products/${id}`, {
                         method: 'PUT',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ display_order: displayOrder })
@@ -385,7 +385,7 @@ export const useHomepageStore = create<HomepageState>()(
             removeTrendingProduct: async (id: string) => {
                 set({ trendingProductsLoading: true, error: null })
                 try {
-                    const response = await fetch(`/store-admin/homepage/trending-products/₹{id}`, {
+                    const response = await fetch(`/store-admin/homepage/trending-products/${id}`, {
                         method: 'DELETE'
                     })
 
@@ -470,7 +470,7 @@ export const useHomepageStore = create<HomepageState>()(
                     if (testimonialData.message) formData.append('message', testimonialData.message)
                     if (testimonialData.photo) formData.append('photo', testimonialData.photo)
 
-                    const response = await fetch(`/store-admin/homepage/testimonials/₹{id}`, {
+                    const response = await fetch(`/store-admin/homepage/testimonials/${id}`, {
                         method: 'PUT',
                         body: formData
                     })
@@ -498,7 +498,7 @@ export const useHomepageStore = create<HomepageState>()(
             deleteTestimonial: async (id: string) => {
                 set({ testimonialsLoading: true, error: null })
                 try {
-                    const response = await fetch(`/store-admin/homepage/testimonials/₹{id}`, {
+                    const response = await fetch(`/store-admin/homepage/testimonials/${id}`, {
                         method: 'DELETE'
                     })
 

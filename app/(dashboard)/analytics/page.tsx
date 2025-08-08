@@ -91,7 +91,7 @@ export default function AnalyticsPage() {
         return {
             value: growth,
             isPositive: growth >= 0,
-            formatted: `₹{growth >= 0 ? '+' : ''}₹{growth.toFixed(1)}%`
+            formatted: `${growth >= 0 ? '+' : ''}${growth.toFixed(1)}%`
         }
     }
 
@@ -116,7 +116,7 @@ export default function AnalyticsPage() {
         description?: string
         color?: "default" | "success" | "warning" | "danger"
     }) => (
-        <Card className={`hover:shadow-lg transition-all duration-200 ₹{color === "success" ? "border-green-200 bg-green-50/50" :
+        <Card className={`hover:shadow-lg transition-all duration-200 ${color === "success" ? "border-green-200 bg-green-50/50" :
             color === "warning" ? "border-orange-200 bg-orange-50/50" :
                 color === "danger" ? "border-red-200 bg-red-50/50" :
                     "hover:border-primary/20"
@@ -125,7 +125,7 @@ export default function AnalyticsPage() {
                 <CardTitle className="text-sm font-medium text-muted-foreground">
                     {title}
                 </CardTitle>
-                <Icon className={`h-4 w-4 ₹{color === "success" ? "text-green-600" :
+                <Icon className={`h-4 w-4 ${color === "success" ? "text-green-600" :
                     color === "warning" ? "text-orange-600" :
                         color === "danger" ? "text-red-600" :
                             "text-muted-foreground"
@@ -140,7 +140,7 @@ export default function AnalyticsPage() {
                         ) : (
                             <ArrowDownRight className="h-3 w-3 text-red-500" />
                         )}
-                        <span className={`text-xs font-medium ₹{growth.isPositive ? "text-green-600" : "text-red-600"
+                        <span className={`text-xs font-medium ${growth.isPositive ? "text-green-600" : "text-red-600"
                             }`}>
                             {growth.formatted}
                         </span>
@@ -159,10 +159,10 @@ export default function AnalyticsPage() {
         if (active && payload && payload.length) {
             return (
                 <div className="bg-background border rounded-lg shadow-lg p-3">
-                    <p className="font-medium">{`₹{label}`}</p>
+                    <p className="font-medium">{`${label}`}</p>
                     {payload.map((entry: any, index: number) => (
                         <p key={index} className="text-sm" style={{ color: entry.color }}>
-                            {`₹{entry.name}: ₹{entry.name.toLowerCase().includes('revenue') || entry.name.toLowerCase().includes('price')
+                            {`${entry.name}: ${entry.name.toLowerCase().includes('revenue') || entry.name.toLowerCase().includes('price')
                                 ? formatCurrency(entry.value)
                                 : formatNumber(entry.value)
                                 }`}
@@ -220,7 +220,7 @@ export default function AnalyticsPage() {
                         </SelectContent>
                     </Select>
                     <Button variant="outline" onClick={handleRefresh} disabled={isRefreshing}>
-                        <RefreshCw className={`mr-2 h-4 w-4 ₹{isRefreshing ? "animate-spin" : ""}`} />
+                        <RefreshCw className={`mr-2 h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`} />
                         Refresh
                     </Button>
                     <Button variant="outline" onClick={handleExport}>
@@ -360,14 +360,14 @@ export default function AnalyticsPage() {
                                                 cx="50%"
                                                 cy="50%"
                                                 labelLine={false}
-                                                label={({ name, percent }) => `₹{name} ₹{(percent * 100).toFixed(0)}%`}
+                                                label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
                                                 outerRadius={80}
                                                 fill="#8884d8"
                                                 dataKey="count"
                                                 nameKey="_id"
                                             >
                                                 {(salesAnalytics?.orderStats || []).map((entry, index) => (
-                                                    <Cell key={`cell-₹{index}`} fill={COLORS[index % COLORS.length]} />
+                                                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                                                 ))}
                                             </Pie>
                                             <Tooltip content={<CustomTooltip />} />
@@ -484,7 +484,7 @@ export default function AnalyticsPage() {
                                                             {[...Array(5)].map((_, i) => (
                                                                 <Star
                                                                     key={i}
-                                                                    className={`h-3 w-3 ₹{i < Math.floor(product.ratings.average)
+                                                                    className={`h-3 w-3 ${i < Math.floor(product.ratings.average)
                                                                         ? "text-yellow-400 fill-current"
                                                                         : "text-gray-300"
                                                                         }`}

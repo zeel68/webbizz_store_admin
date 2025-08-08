@@ -242,7 +242,7 @@
 //     formData.append("folder", "ecommerce_uploads/products");
 
 //     const res = await fetch(
-//       `https://api.cloudinary.com/v1_1/₹{process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/image/upload`,
+//       `https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/image/upload`,
 //       {
 //         method: "POST",
 //         body: formData,
@@ -284,7 +284,7 @@
 //       const uploadedUrls = await Promise.all(
 //         selectedImages.map((file) => uploadToCloudinary(file)),
 //       );
-//       toast.success(`₹{uploadedUrls.length} image(s) uploaded successfully`);
+//       toast.success(`${uploadedUrls.length} image(s) uploaded successfully`);
 
 //       // Prepare product data
 //       const productData = {
@@ -487,8 +487,8 @@
 //                             <div key={index} className="relative group">
 //                               <img
 //                                 src={preview || "/placeholder.svg"}
-//                                 alt={`Preview ₹{index + 1}`}
-//                                 className={`w-full h-20 object-cover rounded-lg border-2 ₹{index === primaryImageIndex
+//                                 alt={`Preview ${index + 1}`}
+//                                 className={`w-full h-20 object-cover rounded-lg border-2 ${index === primaryImageIndex
 //                                   ? "border-primary"
 //                                   : "border-gray-200"
 //                                   }`}

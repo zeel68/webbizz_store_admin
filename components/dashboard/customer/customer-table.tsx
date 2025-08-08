@@ -98,7 +98,7 @@ export function CustomersTable({ customers, isLoading }: CustomersTableProps) {
                             <TableCell>
                                 <div className="flex items-center space-x-3">
                                     <Avatar className="h-8 w-8">
-                                        <AvatarImage src={`https://avatar.vercel.sh/₹{customer.email}`} />
+                                        <AvatarImage src={`https://avatar.vercel.sh/${customer.email}`} />
                                         <AvatarFallback>
                                             {customer.name
                                                 .split(" ")
@@ -131,7 +131,7 @@ export function CustomersTable({ customers, isLoading }: CustomersTableProps) {
                                 <div className="font-medium">{customer.total_orders || 0}</div>
                             </TableCell>
                             <TableCell>
-                                <div className="font-medium">₹{(customer.total_spent || 0).toFixed(2)}</div>
+                                <div className="font-medium">${(customer.total_spent || 0).toFixed(2)}</div>
                             </TableCell>
                             <TableCell>
                                 <Badge

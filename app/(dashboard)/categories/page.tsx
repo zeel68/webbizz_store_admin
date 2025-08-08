@@ -153,7 +153,7 @@ export default function Page() {
     try {
       await fetchCategories(true);
       toast.success("Categories refreshed successfully", {
-        description: `₹{categories.length} categories loaded`,
+        description: `${categories.length} categories loaded`,
       });
     } catch (error) {
       toast.error("Failed to refresh categories", {
@@ -205,7 +205,7 @@ export default function Page() {
             className="transition-all duration-200"
           >
             <RefreshCw
-              className={`mr-2 h-4 w-4 ₹{isRefreshing ? "animate-spin" : ""}`}
+              className={`mr-2 h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`}
             />
             {isRefreshing ? "Refreshing..." : "Refresh"}
           </Button>
@@ -454,7 +454,7 @@ export default function Page() {
                 <span>
                   Showing {filteredAndSortedCategories.length}
                   {filteredAndSortedCategories.length !== categories.length &&
-                    ` of ₹{categories.length}`}{" "}
+                    ` of ${categories.length}`}{" "}
                   categories
                 </span>
               )}

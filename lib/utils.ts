@@ -17,7 +17,7 @@ export function formatNumber(num: number): string {
 }
 
 export function formatPercentage(num: number): string {
-  return `₹{num.toFixed(1)}%`
+  return `${num.toFixed(1)}%`
 }
 
 export function formatDate(date: string | Date): string {
@@ -47,13 +47,13 @@ export function formatRelativeTime(date: string | Date): string {
     return 'Just now'
   } else if (diffInSeconds < 3600) {
     const minutes = Math.floor(diffInSeconds / 60)
-    return `₹{minutes} minute₹{minutes > 1 ? 's' : ''} ago`
+    return `${minutes} minute${minutes > 1 ? 's' : ''} ago`
   } else if (diffInSeconds < 86400) {
     const hours = Math.floor(diffInSeconds / 3600)
-    return `₹{hours} hour₹{hours > 1 ? 's' : ''} ago`
+    return `${hours} hour${hours > 1 ? 's' : ''} ago`
   } else {
     const days = Math.floor(diffInSeconds / 86400)
-    return `₹{days} day₹{days > 1 ? 's' : ''} ago`
+    return `${days} day${days > 1 ? 's' : ''} ago`
   }
 }
 
@@ -67,7 +67,7 @@ export function generateSlug(text: string): string {
     .toLowerCase()
     .replace(/[^\w\s-]/g, '')
     .replace(/[\s_-]+/g, '-')
-    .replace(/^-+|-+₹/g, '')
+    .replace(/^-+|-+$/g, '')
 }
 
 export function debounce<T extends (...args: any[]) => any>(
@@ -105,12 +105,12 @@ export function getInitials(name: string): string {
 }
 
 export function isValidEmail(email: string): boolean {
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+₹/
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
   return emailRegex.test(email)
 }
 
 export function isValidPhone(phone: string): boolean {
-  const phoneRegex = /^\+?[\d\s\-₹₹₹₹]{10,}₹/
+  const phoneRegex = /^\+?[\d\s\-$$$$]{10,}$/
   return phoneRegex.test(phone)
 }
 

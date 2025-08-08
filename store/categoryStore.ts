@@ -57,7 +57,7 @@ export const useCategoryStore = create<CategoryState>()(
                     const response = await apiClient.get(
                         "/store-admin/getStoreCategories",
                     ) as any;
-                    console.log(response);
+
 
                     if (response.success) {
                         const data = response.data.data || response.data;
@@ -138,9 +138,10 @@ export const useCategoryStore = create<CategoryState>()(
 
 
                     const response = await apiClient.put(
-                        `/store-admin/category/₹{id}`,
+                        `/store-admin/category/${id}`,
                         categoryData,
                     ) as any;
+                    console.log(response);
 
                     if (response.success) {
                         const state = get();
@@ -171,7 +172,7 @@ export const useCategoryStore = create<CategoryState>()(
 
 
                     const response = await apiClient.delete(
-                        `/store-admin/category/₹{id}`,
+                        `/store-admin/category/${id}`,
                     ) as any;
 
                     if (response.success) {

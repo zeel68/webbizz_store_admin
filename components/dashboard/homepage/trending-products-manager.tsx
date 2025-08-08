@@ -165,7 +165,7 @@ export function TrendingProductsManager() {
                                                 #{trendingProduct.display_order}
                                             </Badge>
                                             <Badge variant="default">
-                                                ₹{productInfo?.price || 0}
+                                                ${productInfo?.price || 0}
                                             </Badge>
                                         </div>
                                     </div>
@@ -234,7 +234,7 @@ export function TrendingProductsManager() {
                                     )}
                                     {availableProducts.map((product) => (
                                         <SelectItem key={product._id} value={product._id}>
-                                            {product.name} - ₹{product.price}
+                                            {product.name} - ${product.price}
                                         </SelectItem>
                                     ))}
                                 </SelectContent>

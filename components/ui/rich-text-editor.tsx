@@ -326,9 +326,9 @@ export function RichTextEditor({
     if (selectedText) {
       handleCommand('createLink', linkUrl)
     } else if (linkText) {
-      handleCommand('insertHTML', `<a href="₹{linkUrl}">₹{linkText}</a>`)
+      handleCommand('insertHTML', `<a href="${linkUrl}">${linkText}</a>`)
     } else {
-      handleCommand('insertHTML', `<a href="₹{linkUrl}">₹{linkUrl}</a>`)
+      handleCommand('insertHTML', `<a href="${linkUrl}">${linkUrl}</a>`)
     }
 
     setLinkUrl("")
@@ -339,7 +339,7 @@ export function RichTextEditor({
   const insertImage = useCallback(() => {
     if (!imageUrl) return
 
-    const img = `<img src="₹{imageUrl}" alt="₹{imageAlt}" style="max-width: 100%; height: auto;" />`
+    const img = `<img src="${imageUrl}" alt="${imageAlt}" style="max-width: 100%; height: auto;" />`
     handleCommand('insertHTML', img)
 
     setImageUrl("")
@@ -389,7 +389,7 @@ export function RichTextEditor({
   }, [])
 
   const formatBlock = useCallback((tag: string) => {
-    handleCommand('formatBlock', `<₹{tag}>`)
+    handleCommand('formatBlock', `<${tag}>`)
     setCurrentFormat(tag)
   }, [handleCommand])
 
@@ -768,8 +768,8 @@ export function RichTextEditor({
               "[&_img]:rounded [&_img]:shadow-sm"
             )}
             style={{
-              minHeight: `₹{minHeight}px`,
-              maxHeight: maxHeight ? `₹{maxHeight}px` : undefined,
+              minHeight: `${minHeight}px`,
+              maxHeight: maxHeight ? `${maxHeight}px` : undefined,
               wordBreak: 'break-word',
               overflowWrap: 'break-word',
               whiteSpace: 'pre-wrap'

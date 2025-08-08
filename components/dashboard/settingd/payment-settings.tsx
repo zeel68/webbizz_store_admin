@@ -134,7 +134,7 @@ export function PaymentSettings({ storeConfig }: PaymentSettingsProps) {
         const requiredFields = methodInfo.fields.filter(f => f.required)
         for (const field of requiredFields) {
             if (!methodConfig[field.key]) {
-                toast.error(`₹{field.label} is required`)
+                toast.error(`${field.label} is required`)
                 return
             }
         }
@@ -324,7 +324,7 @@ export function PaymentSettings({ storeConfig }: PaymentSettingsProps) {
                                         .map((method) => (
                                             <div
                                                 key={method.id}
-                                                className={`p-3 border rounded-lg cursor-pointer transition-colors ₹{selectedMethodType === method.id
+                                                className={`p-3 border rounded-lg cursor-pointer transition-colors ${selectedMethodType === method.id
                                                     ? "border-primary bg-primary/5"
                                                     : "border-muted hover:border-primary/50"
                                                     }`}
@@ -370,7 +370,7 @@ export function PaymentSettings({ storeConfig }: PaymentSettingsProps) {
                                                 onChange={(e) =>
                                                     setMethodConfig(prev => ({ ...prev, [field.key]: e.target.value }))
                                                 }
-                                                placeholder={`Enter ₹{field.label.toLowerCase()}`}
+                                                placeholder={`Enter ${field.label.toLowerCase()}`}
                                                 required={field.required}
                                             />
                                         )}

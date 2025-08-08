@@ -473,7 +473,7 @@
 //             const session = await getSession();
 //             return new ApiClient({
 //               headers: {
-//                 Authorization: `Bearer ₹{session?.accessToken}`,
+//                 Authorization: `Bearer ${session?.accessToken}`,
 //               },
 //             });
 //           } catch (error) {
@@ -609,7 +609,7 @@
 //               });
 
 //               const response = await apiClient.get(
-//                 `/store-admin/products?₹{searchParams.toString()}`,
+//                 `/store-admin/products?${searchParams.toString()}`,
 //               ) as ApiResponse<any>;
 //               if (response.success) {
 //                 const data = response.data.data || response.data;
@@ -743,7 +743,7 @@
 //               });
 
 //               const response = await apiClient.get(
-//                 `/store-admin/orders?₹{searchParams.toString()}`,
+//                 `/store-admin/orders?${searchParams.toString()}`,
 //               );
 //               if (response.success) {
 //                 const data = response.data.data || response.data;
@@ -792,7 +792,7 @@
 //               });
 
 //               const response = await apiClient.get(
-//                 `/store-admin/customers?₹{searchParams.toString()}`,
+//                 `/store-admin/customers?${searchParams.toString()}`,
 //               );
 //               if (response.success) {
 //                 const data = response.data.data || response.data;
@@ -841,7 +841,7 @@
 //               });
 
 //               const response = await apiClient.get(
-//                 `/store-admin/coupons?₹{searchParams.toString()}`,
+//                 `/store-admin/coupons?${searchParams.toString()}`,
 //               );
 //               if (response.success) {
 //                 const data = response.data.data;
@@ -890,7 +890,7 @@
 //               });
 
 //               const response = await apiClient.get(
-//                 `/store-admin/reviews?₹{searchParams.toString()}`,
+//                 `/store-admin/reviews?${searchParams.toString()}`,
 //               );
 //               if (response.success) {
 //                 const data = response.data.data || response.data;
@@ -936,7 +936,7 @@
 //               });
 
 //               const response = await apiClient.get(
-//                 `/store-admin/inventory?₹{searchParams.toString()}`,
+//                 `/store-admin/inventory?${searchParams.toString()}`,
 //               );
 //               if (response.success) {
 //                 const data = response.data.data;
@@ -1307,7 +1307,7 @@
 //             try {
 //               const apiClient = await getApiClient();
 //               const response = await apiClient.put(
-//                 `/store-admin/products/₹{id}`,
+//                 `/store-admin/products/${id}`,
 //                 productData,
 //               );
 //               if (response.success) {
@@ -1356,7 +1356,7 @@
 //             try {
 //               const apiClient = await getApiClient();
 //               const response = await apiClient.delete(
-//                 `/store-admin/products/₹{id}`,
+//                 `/store-admin/products/${id}`,
 //               );
 //               if (response.success) {
 //                 set((state) => ({
@@ -1429,7 +1429,7 @@
 //             try {
 //               const apiClient = await getApiClient();
 //               const response = await apiClient.post(
-//                 `/store-admin/products/₹{id}/duplicate`,
+//                 `/store-admin/products/${id}/duplicate`,
 //               );
 //               if (response.success) {
 //                 set({
@@ -1494,7 +1494,7 @@
 //             try {
 //               const apiClient = await getApiClient();
 //               const response = await apiClient.put(
-//                 `/store-admin/category/₹{id}`,
+//                 `/store-admin/category/${id}`,
 //                 categoryData,
 //               );
 //               if (response.success) {
@@ -1528,7 +1528,7 @@
 //             try {
 //               const apiClient = await getApiClient();
 //               const response = await apiClient.delete(
-//                 `/store-admin/category/₹{id}`,
+//                 `/store-admin/category/${id}`,
 //               );
 //               if (response.success) {
 //                 const state = get();
@@ -1591,7 +1591,7 @@
 //             try {
 //               const apiClient = await getApiClient();
 //               const response = await apiClient.put(
-//                 `/store-admin/orders/₹{id}`,
+//                 `/store-admin/orders/${id}`,
 //                 orderData,
 //               );
 //               if (response.success) {
@@ -1633,7 +1633,7 @@
 //             try {
 //               const apiClient = await getApiClient();
 //               const response = await apiClient.put(
-//                 `/store-admin/orders/₹{orderId}/status`,
+//                 `/store-admin/orders/${orderId}/status`,
 //                 {
 //                   status,
 //                   tracking_number: trackingNumber,
@@ -1675,7 +1675,7 @@
 //             try {
 //               const apiClient = await getApiClient();
 //               const response = await apiClient.delete(
-//                 `/store-admin/orders/₹{id}`,
+//                 `/store-admin/orders/${id}`,
 //               );
 //               if (response.success) {
 //                 set((state) => ({
@@ -1744,7 +1744,7 @@
 //             try {
 //               const apiClient = await getApiClient();
 //               const response = await apiClient.put(
-//                 `/store-admin/customers/₹{id}`,
+//                 `/store-admin/customers/${id}`,
 //                 customerData,
 //               );
 //               if (response.success) {
@@ -1782,7 +1782,7 @@
 //             try {
 //               const apiClient = await getApiClient();
 //               const response = await apiClient.delete(
-//                 `/store-admin/customers/₹{id}`,
+//                 `/store-admin/customers/${id}`,
 //               );
 //               if (response.success) {
 //                 set((state) => ({
@@ -1851,7 +1851,7 @@
 //             try {
 //               const apiClient = await getApiClient();
 //               const response = await apiClient.put(
-//                 `/store-admin/coupons/₹{id}`,
+//                 `/store-admin/coupons/${id}`,
 //                 couponData,
 //               );
 //               if (response.success) {
@@ -1889,7 +1889,7 @@
 //             try {
 //               const apiClient = await getApiClient();
 //               const response = await apiClient.delete(
-//                 `/store-admin/coupons/₹{id}`,
+//                 `/store-admin/coupons/${id}`,
 //               );
 //               if (response.success) {
 //                 set((state) => ({
@@ -1925,7 +1925,7 @@
 //             try {
 //               const apiClient = await getApiClient();
 //               const response = await apiClient.post(
-//                 `/store-admin/coupons/₹{id}/duplicate`,
+//                 `/store-admin/coupons/${id}/duplicate`,
 //                 { new_code: newCode },
 //               );
 //               if (response.success) {
@@ -1960,7 +1960,7 @@
 //             try {
 //               const apiClient = await getApiClient();
 //               const response = await apiClient.put(
-//                 `/store-admin/reviews/₹{id}/status`,
+//                 `/store-admin/reviews/${id}/status`,
 //                 {
 //                   status,
 //                   admin_notes: adminNotes,
@@ -2000,7 +2000,7 @@
 //             try {
 //               const apiClient = await getApiClient();
 //               const response = await apiClient.post(
-//                 `/store-admin/reviews/₹{id}/reply`,
+//                 `/store-admin/reviews/${id}/reply`,
 //                 { reply },
 //               );
 //               if (response.success) {
@@ -2037,7 +2037,7 @@
 //             try {
 //               const apiClient = await getApiClient();
 //               const response = await apiClient.delete(
-//                 `/store-admin/reviews/₹{id}`,
+//                 `/store-admin/reviews/${id}`,
 //               );
 //               if (response.success) {
 //                 set((state) => ({
@@ -2078,7 +2078,7 @@
 //             try {
 //               const apiClient = await getApiClient();
 //               const response = await apiClient.put(
-//                 `/store-admin/inventory/₹{productId}/stock`,
+//                 `/store-admin/inventory/${productId}/stock`,
 //                 {
 //                   quantity,
 //                   operation,
@@ -2184,7 +2184,7 @@
 //             try {
 //               const apiClient = await getApiClient();
 //               const response = await apiClient.put(
-//                 `/store-admin/shipping-methods/₹{id}`,
+//                 `/store-admin/shipping-methods/${id}`,
 //                 methodData,
 //               );
 //               if (response.success) {
@@ -2219,7 +2219,7 @@
 //             try {
 //               const apiClient = await getApiClient();
 //               const response = await apiClient.delete(
-//                 `/store-admin/shipping-methods/₹{id}`,
+//                 `/store-admin/shipping-methods/${id}`,
 //               );
 //               if (response.success) {
 //                 const state = get();

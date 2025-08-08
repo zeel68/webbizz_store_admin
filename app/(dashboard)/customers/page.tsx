@@ -204,7 +204,7 @@ export default function CustomersPage() {
                     </CardTitle>
                     <CardDescription>
                         View and manage all customers
-                        {hasActiveFilters() && ` (₹{totalItems} filtered results)`}
+                        {hasActiveFilters() && ` (${totalItems} filtered results)`}
                     </CardDescription>
                 </CardHeader>
                 <CardContent>

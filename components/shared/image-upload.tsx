@@ -88,7 +88,7 @@ export default function ImageUpload({
         <div key={idx} className="relative group">
           <img
             src={src || "/placeholder.svg"}
-            alt={`Preview ₹{idx + 1}`}
+            alt={`Preview ${idx + 1}`}
             className={cn(
               "w-full h-24 object-cover rounded-md border-2 transition-all",
               primaryIndex === idx ? "border-blue-500 ring-2 ring-blue-200" : "border-gray-200",

@@ -77,7 +77,7 @@ export const useProductStore = create<ProductState>()(
             fetchProductById: async (id: string) => {
                 set({ loading: true, error: null })
                 try {
-                    const response = await apiClient.get<iProduct>(`/store-admin/products/₹{id}`) as any
+                    const response = await apiClient.get<iProduct>(`/store-admin/products/${id}`) as any
                     console.log(response);
 
                     if (response.success) {
@@ -130,7 +130,7 @@ export const useProductStore = create<ProductState>()(
                 try {
 
 
-                    const response = await apiClient.put<iProduct>(`/store-admin/products/₹{id}`, data)
+                    const response = await apiClient.put<iProduct>(`/store-admin/products/${id}`, data)
                     console.log(response);
 
                     if (response.success) {
@@ -149,7 +149,7 @@ export const useProductStore = create<ProductState>()(
             deleteProduct: async (id: string) => {
                 set({ loading: true, error: null })
                 try {
-                    const response = await apiClient.delete(`/store-admin/products/₹{id}`)
+                    const response = await apiClient.delete(`/store-admin/products/${id}`)
 
                     if (response.success) {
                         set({ loading: false })
@@ -180,7 +180,7 @@ export const useProductStore = create<ProductState>()(
             createVariant: async (productId: string, variant: Omit<iProductVariant, '_id' | 'product_id'>) => {
                 set({ loading: true, error: null })
                 try {
-                    const response = await apiClient.post<iProductVariant>(`/store-admin/products/₹{productId}/variants`, variant) as any
+                    const response = await apiClient.post<iProductVariant>(`/store-admin/products/${productId}/variants`, variant) as any
 
                     if (response.success) {
                         set({ loading: false })
@@ -198,7 +198,7 @@ export const useProductStore = create<ProductState>()(
             updateVariant: async (variantId: string, variant: Partial<iProductVariant>) => {
                 set({ loading: true, error: null })
                 try {
-                    const response = await apiClient.put<iProductVariant>(`/store-admin/products/variants/₹{variantId}`, variant) as any
+                    const response = await apiClient.put<iProductVariant>(`/store-admin/products/variants/${variantId}`, variant) as any
 
                     if (response.success) {
                         set({ loading: false })
@@ -219,7 +219,7 @@ export const useProductStore = create<ProductState>()(
             deleteVariant: async (variantId: string) => {
                 set({ loading: true, error: null })
                 try {
-                    const response = await apiClient.delete(`/store-admin/products/variants/₹{variantId}`) as any
+                    const response = await apiClient.delete(`/store-admin/products/variants/${variantId}`) as any
 
                     if (response.success) {
                         set({ loading: false })

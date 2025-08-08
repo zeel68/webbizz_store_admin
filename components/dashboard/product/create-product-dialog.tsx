@@ -448,7 +448,7 @@
 //                                         <div key={index} className="relative group">
 //                                             <img
 //                                                 src={url || "/placeholder.svg"}
-//                                                 alt={`Existing ₹{index + 1}`}
+//                                                 alt={`Existing ${index + 1}`}
 //                                                 className="w-full h-20 object-cover rounded border"
 //                                             />
 //                                             <Button
@@ -739,7 +739,7 @@
 //                                         ))}
 //                                     </div>
 //                                     <div className="grid grid-cols-3 gap-2 text-sm text-muted-foreground">
-//                                         <span>Price Modifier: ₹{variant.price_modifier || 0}</span>
+//                                         <span>Price Modifier: ${variant.price_modifier || 0}</span>
 //                                         <span>Stock: {variant.stock_quantity || 0}</span>
 //                                         <span>SKU: {variant.sku || "N/A"}</span>
 //                                     </div>

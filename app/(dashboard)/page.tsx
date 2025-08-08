@@ -204,7 +204,7 @@ export default function DashboardPage() {
         return {
             value: growth,
             isPositive: growth >= 0,
-            formatted: `₹{growth >= 0 ? '+' : ''}₹{growth.toFixed(1)}%`
+            formatted: `${growth >= 0 ? '+' : ''}${growth.toFixed(1)}%`
         }
     }
 
@@ -236,7 +236,7 @@ export default function DashboardPage() {
             whileTap={tapScale}
             className="relative"
         >
-            <Card className={`relative overflow-hidden transition-all duration-300 ₹{color === "success" ? "border-green-200 bg-gradient-to-br from-green-50 to-green-100/50" :
+            <Card className={`relative overflow-hidden transition-all duration-300 ${color === "success" ? "border-green-200 bg-gradient-to-br from-green-50 to-green-100/50" :
                 color === "warning" ? "border-orange-200 bg-gradient-to-br from-orange-50 to-orange-100/50" :
                     color === "danger" ? "border-red-200 bg-gradient-to-br from-red-50 to-red-100/50" :
                         color === "info" ? "border-blue-200 bg-gradient-to-br from-blue-50 to-blue-100/50" :
@@ -249,7 +249,7 @@ export default function DashboardPage() {
                     <CardTitle className="text-sm font-medium text-muted-foreground">
                         {title}
                     </CardTitle>
-                    <div className={`p-2 rounded-lg ₹{color === "success" ? "bg-green-100 text-green-600" :
+                    <div className={`p-2 rounded-lg ${color === "success" ? "bg-green-100 text-green-600" :
                         color === "warning" ? "bg-orange-100 text-orange-600" :
                             color === "danger" ? "bg-red-100 text-red-600" :
                                 color === "info" ? "bg-blue-100 text-blue-600" :
@@ -267,7 +267,7 @@ export default function DashboardPage() {
                             ) : (
                                 <ArrowDownRight className="h-3 w-3 text-red-500" />
                             )}
-                            <span className={`text-xs font-medium ₹{growth.isPositive ? "text-green-600" : "text-red-600"
+                            <span className={`text-xs font-medium ${growth.isPositive ? "text-green-600" : "text-red-600"
                                 }`}>
                                 {growth.formatted}
                             </span>
@@ -309,7 +309,7 @@ export default function DashboardPage() {
                     <p className="font-medium text-sm">{label}</p>
                     {payload.map((entry: any, index: number) => (
                         <p key={index} className="text-sm" style={{ color: entry.color }}>
-                            {`₹{entry.name}: ₹{entry.name.toLowerCase().includes('revenue') || entry.name.toLowerCase().includes('price')
+                            {`${entry.name}: ${entry.name.toLowerCase().includes('revenue') || entry.name.toLowerCase().includes('price')
                                 ? formatCurrency(entry.value)
                                 : formatNumber(entry.value)
                                 }`}
@@ -349,7 +349,7 @@ export default function DashboardPage() {
                 <div className="flex items-center space-x-3">
                     <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
                         <Button variant="outline" onClick={loadDashboardData} disabled={isRefreshing}>
-                            <RefreshCw className={`mr-2 h-4 w-4 ₹{isRefreshing ? "animate-spin" : ""}`} />
+                            <RefreshCw className={`mr-2 h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`} />
                             Refresh
                         </Button>
                     </motion.div>
@@ -376,7 +376,7 @@ export default function DashboardPage() {
                                         <p className="text-xs text-muted-foreground">{stat.label}</p>
                                         <p className="text-lg font-semibold">{stat.value}</p>
                                     </div>
-                                    <div className={`flex items-center text-xs ₹{stat.positive ? "text-green-600" : "text-red-600"
+                                    <div className={`flex items-center text-xs ${stat.positive ? "text-green-600" : "text-red-600"
                                         }`}>
                                         {stat.positive ? (
                                             <TrendingUp className="h-3 w-3 mr-1" />
@@ -545,7 +545,7 @@ export default function DashboardPage() {
                                                     nameKey="_id"
                                                 >
                                                     {(salesAnalytics?.orderStats || []).map((entry, index) => (
-                                                        <Cell key={`cell-₹{index}`} fill={CHART_COLORS[index % CHART_COLORS.length]} />
+                                                        <Cell key={`cell-${index}`} fill={CHART_COLORS[index % CHART_COLORS.length]} />
                                                     ))}
                                                 </Pie>
                                                 <Tooltip content={<CustomTooltip />} />
@@ -631,7 +631,7 @@ export default function DashboardPage() {
                                                 className="flex items-center space-x-4 p-3 rounded-lg hover:bg-purple-50/50 transition-colors"
                                             >
                                                 <Avatar className="h-10 w-10">
-                                                    <AvatarImage src={`https://api.dicebear.com/7.x/initials/svg?seed=₹{order.user_id.name}`} />
+                                                    <AvatarImage src={`https://api.dicebear.com/7.x/initials/svg?seed=${order.user_id.name}`} />
                                                     <AvatarFallback className="bg-purple-100 text-purple-600">
                                                         {getInitials(order.user_id.name)}
                                                     </AvatarFallback>
@@ -904,7 +904,7 @@ export default function DashboardPage() {
                                             whileHover={{ x: 5 }}
                                             className="flex items-start space-x-3 p-2 rounded-lg hover:bg-indigo-50/50 transition-colors"
                                         >
-                                            <div className={`p-1 rounded-full ₹{activity.status === 'success' ? 'bg-green-100' :
+                                            <div className={`p-1 rounded-full ${activity.status === 'success' ? 'bg-green-100' :
                                                 activity.status === 'warning' ? 'bg-orange-100' :
                                                     activity.status === 'info' ? 'bg-blue-100' : 'bg-gray-100'
                                                 }`}>
@@ -964,7 +964,7 @@ export default function DashboardPage() {
                                         variant="ghost"
                                         className="h-auto p-4 flex flex-col items-center gap-2 hover:bg-gray-50 w-full"
                                     >
-                                        <div className={`p-3 rounded-lg ₹{action.color}`}>
+                                        <div className={`p-3 rounded-lg ${action.color}`}>
                                             <action.icon className="h-5 w-5" />
                                         </div>
                                         <span className="text-xs font-medium">{action.label}</span>

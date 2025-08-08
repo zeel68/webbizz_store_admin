@@ -95,7 +95,7 @@ export function SubcategoryProductsDialog({
 
             await Promise.all(promises)
 
-            toast.success(`₹{selectedProducts.length} product(s) assigned to ₹{subcategory.display_name}`)
+            toast.success(`${selectedProducts.length} product(s) assigned to ${subcategory.display_name}`)
 
             // Refresh data
             await fetchProducts({ limit: 100 })
@@ -117,7 +117,7 @@ export function SubcategoryProductsDialog({
         onToggle: (productId: string) => void
         isAssigned?: boolean
     }) => (
-        <Card className={`transition-all ₹{isSelected ? 'ring-2 ring-primary' : ''} ₹{isAssigned ? 'opacity-60' : ''}`}>
+        <Card className={`transition-all ${isSelected ? 'ring-2 ring-primary' : ''} ${isAssigned ? 'opacity-60' : ''}`}>
             <CardContent className="p-4">
                 <div className="flex items-start gap-3">
                     {!isAssigned && (
@@ -145,12 +145,12 @@ export function SubcategoryProductsDialog({
                             <div className="flex-1 min-w-0">
                                 <h4 className="font-medium text-sm truncate">{product.name}</h4>
                                 <p className="text-xs text-muted-foreground truncate">
-                                    {product.brand && `₹{product.brand} • `}
+                                    {product.brand && `${product.brand} • `}
                                     SKU: {product.sku || "N/A"}
                                 </p>
                                 <div className="flex items-center gap-2 mt-1">
                                     <Badge variant="outline" className="text-xs">
-                                        ₹{product.price}
+                                        ${product.price}
                                     </Badge>
                                     <Badge variant={product.stock?.quantity ? "default" : "destructive"} className="text-xs">
                                         Stock: {product.stock?.quantity || 0}
@@ -298,7 +298,7 @@ export function SubcategoryProductsDialog({
                             >
                                 {isSubmitting && <Loader2 className="h-4 w-4 animate-spin" />}
                                 <Plus className="h-4 w-4" />
-                                Assign {selectedProducts.length > 0 ? `₹{selectedProducts.length} ` : ''}Product{selectedProducts.length !== 1 ? 's' : ''}
+                                Assign {selectedProducts.length > 0 ? `${selectedProducts.length} ` : ''}Product{selectedProducts.length !== 1 ? 's' : ''}
                             </Button>
                         </div>
                     </div>

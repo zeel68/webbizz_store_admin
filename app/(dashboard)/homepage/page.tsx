@@ -79,7 +79,7 @@ export default function HomepagePage() {
                 </div>
                 <div className="flex items-center space-x-2">
                     <Button variant="outline" size="sm" onClick={handleRefresh} disabled={loading}>
-                        <RefreshCw className={`mr-2 h-4 w-4 ₹{loading ? 'animate-spin' : ''}`} />
+                        <RefreshCw className={`mr-2 h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
                         Refresh
                     </Button>
                 </div>

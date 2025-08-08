@@ -27,7 +27,7 @@ class CloudinaryService {
         formData.append('folder', folder);
 
         const response = await fetch(
-            `https://api.cloudinary.com/v1_1/₹{this.cloudName}/image/upload`,
+            `https://api.cloudinary.com/v1_1/${this.cloudName}/image/upload`,
             {
                 method: 'POST',
                 body: formData,
@@ -61,10 +61,10 @@ class CloudinaryService {
             });
 
             if (!response.ok) {
-                console.warn(`Failed to delete image with public_id: ₹{publicId}`);
+                console.warn(`Failed to delete image with public_id: ${publicId}`);
             }
         } catch (error) {
-            console.warn(`Error deleting image: ₹{error}`);
+            console.warn(`Error deleting image: ${error}`);
         }
     }
 
@@ -83,7 +83,7 @@ class CloudinaryService {
             const uploadIndex = parts.findIndex(part => part === 'upload');
             if (uploadIndex !== -1 && uploadIndex < parts.length - 2) {
                 const folderParts = parts.slice(uploadIndex + 2, -1);
-                return folderParts.length > 0 ? `₹{folderParts.join('/')}/₹{publicId}` : publicId;
+                return folderParts.length > 0 ? `${folderParts.join('/')}/${publicId}` : publicId;
             }
 
             return publicId;

@@ -229,14 +229,14 @@ export function ThemeSettings({ storeConfig }: ThemeSettingsProps) {
                         {layoutOptions.map((layout) => (
                             <div
                                 key={layout.value}
-                                className={`p-4 border rounded-lg cursor-pointer transition-colors ₹{form.watch("layout") === layout.value
+                                className={`p-4 border rounded-lg cursor-pointer transition-colors ${form.watch("layout") === layout.value
                                     ? "border-primary bg-primary/5"
                                     : "border-muted hover:border-primary/50"
                                     }`}
                                 onClick={() => form.setValue("layout", layout.value)}
                             >
                                 <div className="flex items-center space-x-2 mb-2">
-                                    <div className={`w-4 h-4 rounded-full border-2 ₹{form.watch("layout") === layout.value
+                                    <div className={`w-4 h-4 rounded-full border-2 ${form.watch("layout") === layout.value
                                         ? "border-primary bg-primary"
                                         : "border-muted-foreground"
                                         }`} />

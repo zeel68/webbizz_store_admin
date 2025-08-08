@@ -230,7 +230,7 @@ export default function ProductsPage() {
     }
 
     const handleEditProduct = (product: iProduct) => {
-        router.push(`/products/₹{product._id}`)
+        router.push(`/products/${product._id}`)
     }
 
     const handleDetailsDialogClose = (open: boolean) => {
@@ -352,7 +352,7 @@ export default function ProductsPage() {
                     </CardTitle>
                     <CardDescription>
                         View and manage all products in your store
-                        {hasActiveFilters() && ` (₹{totalItems} filtered results)`}
+                        {hasActiveFilters() && ` (${totalItems} filtered results)`}
                     </CardDescription>
                 </CardHeader>
                 <CardContent>

@@ -279,7 +279,7 @@ export function ShippingSettings({ storeConfig }: ShippingSettingsProps) {
                                                             </span>
                                                         </div>
                                                         <Badge variant="outline">
-                                                            ₹{rate.cost.toFixed(2)}
+                                                            ${rate.cost.toFixed(2)}
                                                         </Badge>
                                                     </div>
                                                 ))}
@@ -392,7 +392,7 @@ export function ShippingSettings({ storeConfig }: ShippingSettingsProps) {
                                             </Select>
                                         </div>
                                         <div className="space-y-2">
-                                            <Label>Cost (₹)</Label>
+                                            <Label>Cost ($)</Label>
                                             <Input
                                                 type="number"
                                                 step="0.01"
@@ -428,7 +428,7 @@ export function ShippingSettings({ storeConfig }: ShippingSettingsProps) {
                                                 <div>
                                                     <span className="font-medium capitalize">{rate.method}</span>
                                                     <span className="text-sm text-muted-foreground ml-2">
-                                                        ₹{rate.cost.toFixed(2)} • {rate.estimated_days}
+                                                        ${rate.cost.toFixed(2)} • {rate.estimated_days}
                                                     </span>
                                                 </div>
                                                 <Button
