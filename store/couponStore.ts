@@ -1,7 +1,7 @@
-// stores/categoryStore.ts
+import ApiClient from "@/lib/apiCalling";
+import { getSession } from "next-auth/react";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { apiClient } from "@/data/Consts";
 
 interface CouponState {
   couponInfo: iCouponiInfo | null;
@@ -13,8 +13,18 @@ interface CouponState {
   updateCoupon: (id: string, couponData: any) => Promise<void>;
   deleteCoupon: (id: string) => Promise<void>;
   duplicateCoupon: (id: string, newCode: string) => Promise<void>;
-  deactivateCoupon: (id: string) => void;
+  deactivateCoupon: (id: string) => Promise<void>;
+  clearError: () => void;
 }
+
+const createApiClient = async () => {
+  const session = await getSession();
+  return new ApiClient({
+    headers: {
+      Authorization: `Bearer ${session?.user?.accessToken || ''}`,
+    },
+  });
+};
 
 export const useCouponStore = create<CouponState>()(
   persist(
@@ -22,57 +32,69 @@ export const useCouponStore = create<CouponState>()(
       couponInfo: null,
       loading: false,
       error: null,
+
+      /** Fetch all coupons with query parameters */
       fetchCoupons: async (query: any) => {
         set({ loading: true, error: null });
         try {
+          const apiClient = await createApiClient();
+
           const searchParams = new URLSearchParams();
           Object.entries(query).forEach(([key, value]) => {
-            if (value && value !== "all") {
+            if (value && value !== "all" && value !== "") {
               searchParams.append(key, value.toString());
             }
           });
 
-          const response = (await apiClient.get(
+          const response = await apiClient.get(
             `/store-admin/coupons?${searchParams.toString()}`
-          )) as ApiResponse<any>;
+          ) as ApiResponse<any>;
+
           if (response.success) {
+            const data = response.data?.data || response.data;
             set({
-              couponInfo: response.data.data,
+              couponInfo: data,
               loading: false,
             });
           } else {
             set({
-              error: response.error || "Failed to fetch coupons",
+              error: response.data.message || "Failed to fetch coupons",
               loading: false,
             });
           }
         } catch (error: any) {
+          console.error("Coupons fetch error:", error);
           set({
-            error: error || "Failed to fetch coupons",
+            error: error.message || "Failed to fetch coupons",
             loading: false,
           });
         }
       },
-      // Create Coupon
+
+      /** Create a new coupon */
       createCoupon: async (couponData: any) => {
         set({ loading: true, error: null });
         try {
-          const response = (await apiClient.post(
+          const apiClient = await createApiClient();
+
+          const response = await apiClient.post(
             "/store-admin/coupons",
             couponData
-          )) as ApiResponse<any>;
+          );
+
           if (response.success) {
-            // Refresh coupons list
+            // Refresh the coupons list
             await get().fetchCoupons({ page: 1, limit: 20 });
             set({ loading: false });
           } else {
             set({
-              error: response.error || "Failed to create coupon",
+              error: response.error?.message || "Failed to create coupon",
               loading: false,
             });
-            throw new Error(response.error || "Failed to create coupon");
+            throw new Error(response.error?.message || "Failed to create coupon");
           }
         } catch (error: any) {
+          console.error("Coupon creation error:", error);
           set({
             error: error.message || "Failed to create coupon",
             loading: false,
@@ -81,33 +103,40 @@ export const useCouponStore = create<CouponState>()(
         }
       },
 
-      // Update Coupon
+      /** Update an existing coupon */
       updateCoupon: async (id: string, couponData: any) => {
         set({ loading: true, error: null });
         try {
-          const response = (await apiClient.put(
+          const apiClient = await createApiClient();
+
+          const response = await apiClient.put(
             `/store-admin/coupons/${id}`,
             couponData
-          )) as ApiResponse<any>;
+          ) as ApiResponse<any>;
+
           if (response.success) {
-            set((state) => ({
-              couponInfo: {
-                ...state.couponInfo,
-                coupons:
-                  state.couponInfo?.coupons.map((c) =>
-                    c._id === id ? { ...c, ...response.data } : c
-                  ) || [],
-              },
-              loading: false,
-            }));
+            const state = get();
+            if (state.couponInfo) {
+              const updatedCoupon = response.data?.data || response.data;
+              set({
+                couponInfo: {
+                  ...state.couponInfo,
+                  coupons: state.couponInfo.coupons.map((c) =>
+                    c._id === id ? { ...c, ...updatedCoupon } : c
+                  ),
+                },
+                loading: false,
+              });
+            }
           } else {
             set({
-              error: response.error?.message || "Failed to update coupon",
+              error: response.data.message || "Failed to update coupon",
               loading: false,
             });
-            throw new Error(response.error || "Failed to update coupon");
+            throw new Error(response.data.message || "Failed to update coupon");
           }
         } catch (error: any) {
+          console.error("Coupon update error:", error);
           set({
             error: error.message || "Failed to update coupon",
             loading: false,
@@ -116,30 +145,34 @@ export const useCouponStore = create<CouponState>()(
         }
       },
 
-      // Delete Coupon
+      /** Delete a coupon */
       deleteCoupon: async (id: string) => {
         set({ loading: true, error: null });
         try {
+          const apiClient = await createApiClient();
+
           const response = await apiClient.delete(`/store-admin/coupons/${id}`);
+
           if (response.success) {
-            set((state) => ({
-              couponsInfo: {
-                ...state.couponInfo,
-                coupons:
-                  state.couponInfo?.coupons.filter((c) => c._id !== id) || [],
-              },
-              loading: false,
-            }));
+            const state = get();
+            if (state.couponInfo) {
+              set({
+                couponInfo: {
+                  ...state.couponInfo,
+                  coupons: state.couponInfo.coupons.filter((c) => c._id !== id),
+                },
+                loading: false,
+              });
+            }
           } else {
             set({
               error: response.error?.message || "Failed to delete coupon",
               loading: false,
             });
-            throw new Error(
-              response.error?.message || "Failed to delete coupon"
-            );
+            throw new Error(response.error?.message || "Failed to delete coupon");
           }
         } catch (error: any) {
+          console.error("Coupon deletion error:", error);
           set({
             error: error.message || "Failed to delete coupon",
             loading: false,
@@ -148,16 +181,18 @@ export const useCouponStore = create<CouponState>()(
         }
       },
 
-      // Duplicate Coupon
+      /** Duplicate a coupon */
       duplicateCoupon: async (id: string, newCode: string) => {
         set({ loading: true, error: null });
         try {
+          const apiClient = await createApiClient();
+
           const response = await apiClient.post(
             `/store-admin/coupons/${id}/duplicate`,
             { new_code: newCode }
           );
+
           if (response.success) {
-            // Refresh coupons list
             await get().fetchCoupons({ page: 1, limit: 20 });
             set({ loading: false });
           } else {
@@ -165,11 +200,10 @@ export const useCouponStore = create<CouponState>()(
               error: response.error?.message || "Failed to duplicate coupon",
               loading: false,
             });
-            throw new Error(
-              response.error?.message || "Failed to duplicate coupon"
-            );
+            throw new Error(response.error?.message || "Failed to duplicate coupon");
           }
         } catch (error: any) {
+          console.error("Coupon duplication error:", error);
           set({
             error: error.message || "Failed to duplicate coupon",
             loading: false,
@@ -178,16 +212,18 @@ export const useCouponStore = create<CouponState>()(
         }
       },
 
-      //Deactivate Coupon
+      /** Deactivate a coupon */
       deactivateCoupon: async (id: string) => {
         set({ loading: true, error: null });
         try {
+          const apiClient = await createApiClient();
+
           const response = await apiClient.post(
             `/store-admin/coupons/deactivate/${id}`,
             {}
           );
+
           if (response.success) {
-            // Refresh coupons list
             await get().fetchCoupons({ page: 1, limit: 20 });
             set({ loading: false });
           } else {
@@ -195,11 +231,10 @@ export const useCouponStore = create<CouponState>()(
               error: response.error?.message || "Failed to deactivate coupon",
               loading: false,
             });
-            throw new Error(
-              response.error?.message || "Failed to deactivate coupon"
-            );
+            throw new Error(response.error?.message || "Failed to deactivate coupon");
           }
         } catch (error: any) {
+          console.error("Coupon deactivation error:", error);
           set({
             error: error.message || "Failed to deactivate coupon",
             loading: false,
@@ -212,6 +247,9 @@ export const useCouponStore = create<CouponState>()(
     }),
     {
       name: "coupon-store",
+      partialize: (state) => ({
+        couponInfo: state.couponInfo,
+      }),
     }
   )
 );

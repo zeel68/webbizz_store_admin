@@ -35,13 +35,13 @@ export const CardWrapper = ({
                     <SocialLogin showGoogle showFacebook />
                 </CardContent>
             )}
-            <CardFooter>
+            {/* <CardFooter>
                 {backbutton && backbuttonHref && (
                     <Link href={backbuttonHref} className="w-full text-sm text-black-500 hover:underline text-center">
                         {backbuttonLabel}
                     </Link>
                 )}
-            </CardFooter>
+            </CardFooter> */}
         </Card>
     );
 }

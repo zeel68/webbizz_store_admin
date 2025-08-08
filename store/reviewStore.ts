@@ -1,7 +1,9 @@
 // stores/ReviewStore.ts
+import ApiClient from "@/lib/apiCalling";
+import { getSession } from "next-auth/react";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { apiClient } from "@/data/Consts";
+
 
 interface ReviewState {
   reviewInfo: iReviewsInfo | null;
@@ -17,6 +19,12 @@ interface ReviewState {
   replyToReview: (id: string, reply: string) => Promise<void>;
   deleteReview: (id: string) => Promise<void>;
 }
+const session = await getSession();
+const apiClient = new ApiClient({
+  headers: {
+    Authorization: `Bearer ₹{session?.user.accessToken}`,
+  },
+});
 
 export const useReviewStore = create<ReviewState>()(
   persist(
@@ -35,8 +43,10 @@ export const useReviewStore = create<ReviewState>()(
           });
 
           const response = (await apiClient.get(
-            `/store-admin/reviews?${searchParams.toString()}`
+            `/store-admin/reviews?₹{searchParams.toString()}`
           )) as ApiResponse<any>;
+          console.log(response);
+
           if (response.success) {
             set({
               reviewInfo: response.data.data || response.data,
@@ -64,12 +74,14 @@ export const useReviewStore = create<ReviewState>()(
         set({ loading: true, error: null });
         try {
           const response = (await apiClient.put(
-            `/store-admin/reviews/${id}/status`,
+            `/store-admin/reviews/₹{id}/status`,
             {
               status,
               admin_notes: adminNotes,
             }
           )) as ApiResponse<any>;
+          console.log(response);
+
           if (response.success) {
             set((state) => ({
               reviewsInfo: {
@@ -102,7 +114,7 @@ export const useReviewStore = create<ReviewState>()(
         set({ loading: true, error: null });
         try {
           const response = await apiClient.post(
-            `/store-admin/reviews/${id}/reply`,
+            `/store-admin/reviews/₹{id}/reply`,
             { reply }
           );
           if (response.success) {
@@ -137,7 +149,7 @@ export const useReviewStore = create<ReviewState>()(
         set({ loading: true, error: null });
         try {
           const response = (await apiClient.delete(
-            `/store-admin/reviews/${id}`
+            `/store-admin/reviews/₹{id}`
           )) as ApiResponse<any>;
           if (response.success) {
             set((state) => ({

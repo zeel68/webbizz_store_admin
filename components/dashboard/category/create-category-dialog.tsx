@@ -138,7 +138,7 @@ export function CreateCategoryDialog({
     formDataUpload.append("folder", "ecommerce_uploads/categories");
 
     const res = await fetch(
-      `https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/image/upload`,
+      `https://api.cloudinary.com/v1_1/₹{process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/image/upload`,
       {
         method: "POST",
         body: formDataUpload,
@@ -200,7 +200,7 @@ export function CreateCategoryDialog({
         // if (onCreate) onCreate();
       }
 
-      onOpenChange(false);
+
     } catch (error: any) {
       toast.error(
         error.message ||
@@ -210,6 +210,7 @@ export function CreateCategoryDialog({
       );
     } finally {
       setIsSubmitting(false);
+      onOpenChange(false);
     }
   };
 
@@ -419,6 +420,7 @@ export function CreateCategoryDialog({
                             disabled={isSubmitting}
                             multiple={false}
                             showPreview={true}
+                            showLocalPreview={true}
                           />
                           {formData.image_url &&
                             selectedImages.length === 0 && (

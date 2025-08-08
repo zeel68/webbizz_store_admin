@@ -712,10 +712,10 @@
 //         customers: 1234,
 //         revenue: 2345,
 //         recentOrders: [
-//             { id: "#1234", customer: "John Doe", amount: "$89.99", status: "Processing" },
-//             { id: "#1235", customer: "Jane Smith", amount: "$156.50", status: "Shipped" },
-//             { id: "#1236", customer: "Mike Johnson", amount: "$67.25", status: "Delivered" },
-//             { id: "#1237", customer: "Sarah Wilson", amount: "$234.00", status: "Processing" },
+//             { id: "#1234", customer: "John Doe", amount: "₹89.99", status: "Processing" },
+//             { id: "#1235", customer: "Jane Smith", amount: "₹156.50", status: "Shipped" },
+//             { id: "#1236", customer: "Mike Johnson", amount: "₹67.25", status: "Delivered" },
+//             { id: "#1237", customer: "Sarah Wilson", amount: "₹234.00", status: "Processing" },
 //         ],
 //     },
 // }
@@ -862,11 +862,11 @@
 // // Filter Options for Product Search
 // export const FILTER_OPTIONS = {
 //     priceRanges: [
-//         { label: "Under $25", min: 0, max: 25 },
-//         { label: "$25 - $50", min: 25, max: 50 },
-//         { label: "$50 - $100", min: 50, max: 100 },
-//         { label: "$100 - $200", min: 100, max: 200 },
-//         { label: "Over $200", min: 200, max: 999999 },
+//         { label: "Under ₹25", min: 0, max: 25 },
+//         { label: "₹25 - ₹50", min: 25, max: 50 },
+//         { label: "₹50 - ₹100", min: 50, max: 100 },
+//         { label: "₹100 - ₹200", min: 100, max: 200 },
+//         { label: "Over ₹200", min: 200, max: 999999 },
 //     ],
 //     sortOptions: [
 //         { label: "Most Popular", value: "popular" },

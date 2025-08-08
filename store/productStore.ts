@@ -1,146 +1,264 @@
-// stores/categoryStore.ts
-import { create } from "zustand";
-import { devtools, persist } from "zustand/middleware";
+import { create } from "zustand"
+import { devtools } from 'zustand/middleware'
 
 
-
-import ApiClient from "@/lib/apiCalling";
-import { getSession } from "next-auth/react";
-import { apiClient } from "@/data/Consts";
+import { getSession } from "next-auth/react"
+import ApiClient from "@/lib/apiCalling"
 
 interface ProductState {
+    // State
     productInfo: iProductInfo | null
-    loading: boolean;
-    error: string | null;
-    lastFetch: number;
+    selectedProduct: iProduct | null
+    stats: iProductStats | null
+    loading: boolean
+    error: string | null
 
-    fetchProducts: (query: any) => Promise<void>;
-    createProduct: (categoryData: iProductFormData) => void
-    updateProduct: (id: string, productData: iProductFormData) => void
-    deleteProduct: (id: string) => void
+    // Actions
+    fetchProducts: (filters?: iProductFilters) => Promise<void>
+    fetchProductById: (id: string) => Promise<void>
+    createProduct: (data: iProductFormData, images?: File[]) => Promise<void>
+    updateProduct: (id: string, data: iProductFormData, images?: File[]) => Promise<void>
+    deleteProduct: (id: string) => Promise<void>
+    fetchProductStats: () => Promise<void>
+    assignProductsToCategory: (prodoductsId: string[], categoryId: string) => Promise<void>
+
+    // Variant actions
+    createVariant: (productId: string, variant: Omit<iProductVariant, '_id' | 'product_id'>) => Promise<void>
+    updateVariant: (variantId: string, variant: Partial<iProductVariant>) => Promise<void>
+    deleteVariant: (variantId: string) => Promise<void>
+
+    // Utility actions
     clearError: () => void
+    clearSelectedProduct: () => void
 }
 
+const session = await getSession();
+const apiClient = new ApiClient({
+    headers: {
+        Authorization: `Bearer ₹{session?.user.accessToken}`,
+    },
+});
+
 export const useProductStore = create<ProductState>()(
-    persist(
+    devtools(
         (set, get) => ({
+            // Initial state
             productInfo: null,
+            selectedProduct: null,
+            stats: null,
             loading: false,
             error: null,
-            lastFetch: 0,
 
-            fetchProducts: async (query: any) => {
+            // Fetch products with filters
+            fetchProducts: async (filters = {}) => {
                 set({ loading: true, error: null })
                 try {
+                    const queryParams = new URLSearchParams()
 
-                    const searchParams = new URLSearchParams()
-                    Object.entries(query).forEach(([key, value]) => {
-                        if (value && value !== "all") {
-                            searchParams.append(key, value.toString())
+                    Object.entries(filters).forEach(([key, value]) => {
+                        if (value !== undefined && value !== null && value !== '') {
+                            queryParams.append(key, value.toString())
                         }
                     })
 
-                    const response = await apiClient.get(`/store-admin/products?${searchParams.toString()}`) as ApiResponse<any>
-                    console.log(response.data.data);
+                    const response = await apiClient.get<iProductInfo>("/store-admin/products", { params: filters }) as any
 
                     if (response.success) {
-                        set({
-                            productInfo: response.data.data || response.data,
-                            loading: false,
-
-                        })
+                        set({ productInfo: response.data.data, loading: false })
                     } else {
-                        set({ error: response.error || "Failed to fetch products", loading: false })
+                        set({ error: response.error || 'Failed to fetch products', loading: false })
                     }
                 } catch (error: any) {
-                    set({ error: error.message || "Failed to fetch products", loading: false })
+                    set({ error: error.message || 'Failed to fetch products', loading: false })
                 }
             },
-            createProduct: async (productData: any) => {
+
+            // Fetch single product by ID
+            fetchProductById: async (id: string) => {
                 set({ loading: true, error: null })
                 try {
+                    const response = await apiClient.get<iProduct>(`/store-admin/products/₹{id}`) as any
+                    console.log(response);
 
-                    const response = await apiClient.post("/store-admin/products", productData)
                     if (response.success) {
-                        // Refresh products list
-                        await get().fetchProducts({ page: 1, limit: 20 })
+                        set({ selectedProduct: response.data.data, loading: false })
+                        console.log(get().selectedProduct);
+
+                    } else {
+                        set({ error: response.error || 'Failed to fetch product', loading: false })
+                    }
+                } catch (error: any) {
+                    set({ error: error.message || 'Failed to fetch product', loading: false })
+                }
+            },
+
+            // Create new product
+            createProduct: async (data: iProductFormData, images?: File[]) => {
+                set({ loading: true, error: null })
+                try {
+                    const formData = new FormData()
+
+                    // Add product data
+                    formData.append('productData', JSON.stringify(data))
+
+                    // Add images if provided
+                    if (images && images.length > 0) {
+                        images.forEach((image, index) => {
+                            formData.append(`images`, image)
+                        })
+                    }
+
+                    const response = await apiClient.post<iProduct>("/store-admin/products", formData, {
+                        headers: { 'Content-Type': 'multipart/form-data' }
+                    })
+
+                    if (response.success) {
                         set({ loading: false })
+                        // Refresh products list
+                        get().fetchProducts()
                     } else {
-                        set({ error: response.error || "Failed to create product", loading: false })
-                        throw new Error(response.error?.message || "Failed to create product")
+                        set({ error: response.error?.message || 'Failed to create product', loading: false })
                     }
                 } catch (error: any) {
-                    set({ error: error.message || "Failed to create product", loading: false })
-                    throw error
+                    set({ error: error.message || 'Failed to create product', loading: false })
                 }
             },
 
-            // Update Product
-            updateProduct: async (id: string, productData: any) => {
+            // Update existing product
+            updateProduct: async (id: string, data: iProductFormData, images?: File[]) => {
                 set({ loading: true, error: null })
-                console.log("Update Data", productData);
-
                 try {
-                    const response = await apiClient.put(`/store-admin/products/${id}`, productData) as ApiResponse<any>
+
+
+                    const response = await apiClient.put<iProduct>(`/store-admin/products/₹{id}`, data)
+                    console.log(response);
 
                     if (response.success) {
-                        set((state) => {
-                            const currentProducts = state.productInfo?.products || []
-                            const updatedProducts = currentProducts.map((product) =>
-                                product.id === id ? { ...product, ...response.data } : product,
-                            )
-                            return {
-                                productsInfo: {
-                                    ...state.productInfo,
-                                    products: updatedProducts,
-                                },
-                                isLoading: false,
-                                error: null,
-                            }
-                        })
-                        return response.data
+                        set({ loading: false, selectedProduct: response.data })
+                        // Refresh products list
+                        get().fetchProducts()
                     } else {
-                        const errorMsg = response.error || "Failed to update product"
-                        set({ error: errorMsg, loading: false })
-                        throw new Error(errorMsg)
+                        set({ error: response.error?.message || 'Failed to update product', loading: false })
                     }
                 } catch (error: any) {
-                    const errorMessage = error.response?.data?.message || error.message || "Failed to update product"
-                    set({ error: errorMessage, loading: false })
-                    throw new Error(errorMessage)
+                    set({ error: error.message || 'Failed to update product', loading: false })
                 }
             },
 
-            // Delete Product
+            // Delete product
             deleteProduct: async (id: string) => {
                 set({ loading: true, error: null })
                 try {
+                    const response = await apiClient.delete(`/store-admin/products/₹{id}`)
 
-                    const response = await apiClient.delete(`/store-admin/products/${id}`) as ApiResponse<any>
                     if (response.success) {
-                        set((state) => ({
-                            productInfo: {
-                                ...state.productInfo,
-                                products: state.productInfo?.products.filter((p) => p.id !== id) || [],
-                            },
-                            loading: false,
-                        }))
+                        set({ loading: false })
+                        // Refresh products list
+                        get().fetchProducts()
                     } else {
-                        set({ error: response.error || "Failed to delete product", loading: false })
-                        throw new Error(response.error || "Failed to delete product")
+                        set({ error: response.error?.message || 'Failed to delete product', loading: false })
                     }
                 } catch (error: any) {
-                    set({ error: error.message || "Failed to delete product", loading: false })
-                    throw error
+                    set({ error: error.message || 'Failed to delete product', loading: false })
                 }
             },
 
+            // Fetch product statistics
+            fetchProductStats: async () => {
+                try {
+                    const response = await apiClient.get<iProductStats>("/store-admin/products/stats") as any
 
+                    if (response.success) {
+                        set({ stats: response.data })
+                    }
+                } catch (error: any) {
+                    console.error('Failed to fetch product stats:', error)
+                }
+            },
+
+            // Create product variant
+            createVariant: async (productId: string, variant: Omit<iProductVariant, '_id' | 'product_id'>) => {
+                set({ loading: true, error: null })
+                try {
+                    const response = await apiClient.post<iProductVariant>(`/store-admin/products/₹{productId}/variants`, variant) as any
+
+                    if (response.success) {
+                        set({ loading: false })
+                        // Refresh product details
+                        get().fetchProductById(productId)
+                    } else {
+                        set({ error: response.error?.message || 'Failed to create variant', loading: false })
+                    }
+                } catch (error: any) {
+                    set({ error: error.message || 'Failed to create variant', loading: false })
+                }
+            },
+
+            // Update product variant
+            updateVariant: async (variantId: string, variant: Partial<iProductVariant>) => {
+                set({ loading: true, error: null })
+                try {
+                    const response = await apiClient.put<iProductVariant>(`/store-admin/products/variants/₹{variantId}`, variant) as any
+
+                    if (response.success) {
+                        set({ loading: false })
+                        // Refresh product details if we have a selected product
+                        const { selectedProduct } = get()
+                        if (selectedProduct) {
+                            get().fetchProductById(selectedProduct._id)
+                        }
+                    } else {
+                        set({ error: response.error?.message || 'Failed to update variant', loading: false })
+                    }
+                } catch (error: any) {
+                    set({ error: error.message || 'Failed to update variant', loading: false })
+                }
+            },
+
+            // Delete product variant
+            deleteVariant: async (variantId: string) => {
+                set({ loading: true, error: null })
+                try {
+                    const response = await apiClient.delete(`/store-admin/products/variants/₹{variantId}`) as any
+
+                    if (response.success) {
+                        set({ loading: false })
+                        // Refresh product details if we have a selected product
+                        const { selectedProduct } = get()
+                        if (selectedProduct) {
+                            get().fetchProductById(selectedProduct._id)
+                        }
+                    } else {
+                        set({ error: response.error?.message || 'Failed to delete variant', loading: false })
+                    }
+                } catch (error: any) {
+                    set({ error: error.message || 'Failed to delete variant', loading: false })
+                }
+            },
+            assignProductsToCategory: async (prodouctsId: string[], categoryId: string) => {
+                try {
+                    set({ loading: true, error: null })
+                    const response = await apiClient.post("/store-admin/assignProduct", { product_ids: prodouctsId, category_id: categoryId }) as ApiResponse<any>
+                    console.log(response);
+
+                    if (response.success) {
+                        set({ loading: false })
+                    } else {
+                        throw new Error(response.data?.message || "Failed to add product to category")
+                    }
+                } catch (error: any) {
+                    set({ error: error.message || "Failed to add product to category", loading: false })
+                    throw error
+                }
+            },
+            // Clear error
             clearError: () => set({ error: null }),
+
+            // Clear selected product
+            clearSelectedProduct: () => set({ selectedProduct: null })
         }),
         {
-            name: "category-store",
-
-        },
-    ),
-);
+            name: 'product-store'
+        }
+    )
+)

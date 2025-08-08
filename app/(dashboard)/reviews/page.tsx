@@ -227,7 +227,7 @@ export default function ReviewsPage() {
               {[1, 2, 3, 4, 5].map((star) => (
                 <Star
                   key={star}
-                  className={`h-3 w-3 ${
+                  className={`h-3 w-3 ₹{
                     star <= 4 ? "text-yellow-400 fill-current" : "text-gray-300"
                   }`}
                 />
@@ -295,7 +295,7 @@ export default function ReviewsPage() {
           </CardTitle>
           <CardDescription>
             Latest customer feedback and ratings
-            {hasActiveFilters() && ` (${totalItems} filtered results)`}
+            {hasActiveFilters() && ` (₹{totalItems} filtered results)`}
           </CardDescription>
         </CardHeader>
         <CardContent>

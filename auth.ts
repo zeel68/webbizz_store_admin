@@ -32,6 +32,8 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 
           const { success } = apiResponse
           const data = apiResponse.data as ApiResponse<iLoginResponseData>
+          console.log(apiResponse);
+
           if (!success || !data?.data) {
             console.warn("Login failed", apiResponse)
             return null

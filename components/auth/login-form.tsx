@@ -11,12 +11,13 @@ import { LoginSchema } from "@/models/schemas";
 import { useUserStore } from "@/store/userStore";
 import { ADMIN_ROLE_ID, CUSTOMER_ROLE_ID, OWNER_ROLE_ID } from "@/data/Consts";
 
-import { Form, FormControl, FormField, FormItem, FormLabel } from "../ui/form";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "../ui/form";
 import { Input } from "../ui/input";
 import { Button } from "../ui/button";
 import { FormError } from "../form/form-error";
 import { FormSuccess } from "../form/from-success";
 import { CardWrapper } from "./card-wrapper";
+import { toast } from "sonner";
 
 export const LoginForm = () => {
   const router = useRouter();
@@ -48,7 +49,10 @@ export const LoginForm = () => {
 
         if (result?.error) {
           console.error("Sign-in error:", result.error);
-          setError("Invalid credentials or server error.");
+          setError("Invalid credentials. Please check your email and password.");
+          toast.error("Login failed", {
+            description: "Invalid credentials. Please try again.",
+          });
           return;
         }
 
@@ -59,7 +63,10 @@ export const LoginForm = () => {
             const { id, email, name, role, accessToken } = session.user;
 
             if (!accessToken) {
-              setError("No access token returned from session.");
+              setError("Authentication failed. Please try again.");
+              toast.error("Authentication failed", {
+                description: "No access token received.",
+              });
               return;
             }
 
@@ -75,27 +82,38 @@ export const LoginForm = () => {
             );
 
             setSuccess("Logged in successfully!");
+            toast.success("Welcome back!", {
+              description: "You have been logged in successfully.",
+            });
 
-            // Redirect based on role
-            switch (role) {
-              case ADMIN_ROLE_ID:
-                router.push("/prod");
-                break;
-              case OWNER_ROLE_ID:
-                router.push("/");
-                break;
-              case CUSTOMER_ROLE_ID:
-              default:
-                router.push("/");
-                break;
-            }
+            // Redirect based on role with a small delay to show success message
+            setTimeout(() => {
+              switch (role) {
+                case ADMIN_ROLE_ID:
+                  router.push("/products");
+                  break;
+                case OWNER_ROLE_ID:
+                  router.push("/");
+                  break;
+                case CUSTOMER_ROLE_ID:
+                default:
+                  router.push("/");
+                  break;
+              }
+            }, 1000);
           } else {
-            setError("Failed to retrieve session after login.");
+            setError("Failed to retrieve user session.");
+            toast.error("Session error", {
+              description: "Failed to retrieve user information.",
+            });
           }
         }
       } catch (err) {
         console.error("Login error:", err);
-        setError("Login failed. Please try again.");
+        setError("An unexpected error occurred. Please try again.");
+        toast.error("Login failed", {
+          description: "An unexpected error occurred.",
+        });
       }
     });
   };
@@ -106,7 +124,7 @@ export const LoginForm = () => {
       backbuttonLabel="Don't have an account? Sign up"
       backbutton
       backbuttonHref="/signup"
-      showSocialLogin
+
     >
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
@@ -123,9 +141,12 @@ export const LoginForm = () => {
                     <Input
                       disabled={isPending}
                       placeholder="you@example.com"
+                      type="email"
                       {...field}
+                      className="transition-colors focus:border-primary"
                     />
                   </FormControl>
+                  <FormMessage />
                 </FormItem>
               )}
             />
@@ -143,8 +164,10 @@ export const LoginForm = () => {
                       type="password"
                       placeholder="••••••••"
                       {...field}
+                      className="transition-colors focus:border-primary"
                     />
                   </FormControl>
+                  <FormMessage />
                 </FormItem>
               )}
             />
@@ -153,8 +176,19 @@ export const LoginForm = () => {
           <FormError error={error} />
           <FormSuccess msg={success} />
 
-          <Button type="submit" disabled={isPending} className="w-full">
-            {isPending ? "Signing in..." : "Login"}
+          <Button
+            type="submit"
+            disabled={isPending}
+            className="w-full transition-all duration-200"
+          >
+            {isPending ? (
+              <div className="flex items-center">
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                Signing in...
+              </div>
+            ) : (
+              "Login"
+            )}
           </Button>
         </form>
       </Form>

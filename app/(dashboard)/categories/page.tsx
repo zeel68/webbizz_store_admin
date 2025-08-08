@@ -36,6 +36,7 @@ import {
 import React, { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { CreateCategoryDialog } from "@/components/dashboard/category/create-category-dialog";
+import { AddProductsToCategoryDialog } from "@/components/dashboard/category/add-product-to-category";
 
 type FilterType = "all" | "active" | "inactive" | "primary" | "subcategory";
 type SortType = "name-asc" | "name-desc" | "created-asc" | "created-desc";
@@ -53,17 +54,19 @@ export default function Page() {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<any>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-
+  const [isAssignProductDialogOpen, setAssignProductDialogOpen] = useState(false)
   useEffect(() => {
     fetchCategories(true);
   }, [fetchCategories]);
+
+  console.log(categories);
 
   // Enhanced filtering and sorting logic
   const filteredAndSortedCategories = useMemo(() => {
     let filtered = categories.filter((category) => {
       // Search filter
       const matchesSearch =
-        category?.display_name
+        category!.display_name
           .toLowerCase()
           .includes(searchTerm.toLowerCase()) ||
         (category.description &&
@@ -150,7 +153,7 @@ export default function Page() {
     try {
       await fetchCategories(true);
       toast.success("Categories refreshed successfully", {
-        description: `${categories.length} categories loaded`,
+        description: `₹{categories.length} categories loaded`,
       });
     } catch (error) {
       toast.error("Failed to refresh categories", {
@@ -168,13 +171,18 @@ export default function Page() {
     setSelectedCategory(category);
     setIsEditDialogOpen(true);
   };
+  const handleAssignProducts = (category: any) => {
+    setSelectedCategory(category)
+    setAssignProductDialogOpen(true)
+  }
   const handleDialogClose = () => {
     setIsCreateDialogOpen(false);
     setIsEditDialogOpen(false);
     setSelectedCategory(null);
-
-    // Data will be automatically updated through the store
+    setAssignProductDialogOpen(false)
   };
+
+
 
   return (
     <div className="space-y-6 bg-background">
@@ -197,7 +205,7 @@ export default function Page() {
             className="transition-all duration-200"
           >
             <RefreshCw
-              className={`mr-2 h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`}
+              className={`mr-2 h-4 w-4 ₹{isRefreshing ? "animate-spin" : ""}`}
             />
             {isRefreshing ? "Refreshing..." : "Refresh"}
           </Button>
@@ -446,7 +454,7 @@ export default function Page() {
                 <span>
                   Showing {filteredAndSortedCategories.length}
                   {filteredAndSortedCategories.length !== categories.length &&
-                    ` of ${categories.length}`}{" "}
+                    ` of ₹{categories.length}`}{" "}
                   categories
                 </span>
               )}
@@ -463,8 +471,8 @@ export default function Page() {
             categories={filteredAndSortedCategories}
             isLoading={loading}
             onEdit={handleEditCategory}
-            // onAddProduct={handleAddProduct}
-            // onAddSubcategory={handleAddSubcategory}
+            onAddProduct={handleAssignProducts}
+          // onAddSubcategory={handleAddSubcategory}
           />
         </CardContent>
       </Card>
@@ -475,6 +483,11 @@ export default function Page() {
 
       <CreateCategoryDialog
         open={isEditDialogOpen}
+        onOpenChange={handleDialogClose}
+        category={selectedCategory}
+      />
+      <AddProductsToCategoryDialog
+        open={isAssignProductDialogOpen}
         onOpenChange={handleDialogClose}
         category={selectedCategory}
       />

@@ -32,18 +32,10 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { formatCurrency } from "@/lib/utils";
-import {
-  MoreHorizontal,
-  Trash2,
-  Copy,
-  ToggleLeft,
-  ToggleRight,
-  Percent,
-  DollarSign,
-  Truck,
-} from "lucide-react";
+import { MoreHorizontal, Trash2, Copy, ToggleLeft, ToggleRight, Percent, DollarSign, Truck, Calendar, Users, TrendingUp } from 'lucide-react';
 import { toast } from "sonner";
 import { useCouponStore } from "@/store/couponStore";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface CouponTableProps {
   coupons: iCoupon[];
@@ -52,12 +44,11 @@ interface CouponTableProps {
 
 export function CouponsTable({ coupons, isLoading }: CouponTableProps) {
   const {
-    couponInfo,
-    loading,
     updateCoupon,
     deleteCoupon,
     duplicateCoupon,
     deactivateCoupon,
+    loading: storeLoading,
   } = useCouponStore();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedCoupon, setSelectedCoupon] = useState<any>(null);
@@ -65,9 +56,8 @@ export function CouponsTable({ coupons, isLoading }: CouponTableProps) {
   const handleToggleStatus = async (coupon: any) => {
     try {
       await updateCoupon(coupon._id, { is_active: !coupon.is_active });
-
       toast.success(
-        `Coupon ${coupon.is_active ? "deactivated" : "activated"} successfully`
+        `Coupon ₹{coupon.is_active ? "deactivated" : "activated"} successfully`
       );
     } catch (error) {
       toast.error(`Failed to update coupon status`);
@@ -86,24 +76,29 @@ export function CouponsTable({ coupons, isLoading }: CouponTableProps) {
       toast.error("Failed to delete coupon");
     }
   };
+
   const handleDeactivateCoupon = async (id: string) => {
     try {
-      const response = await deactivateCoupon(id);
-      toast.success("Coupon deactivate successfully");
+      await deactivateCoupon(id);
+      toast.success("Coupon deactivated successfully");
     } catch (error) {
       toast.error("Failed to deactivate coupon");
     }
   };
 
   const handleDuplicateCoupon = async (coupon: any) => {
-    const newCode = `${coupon.code}_COPY_${Date.now().toString().slice(-4)}`;
+    const newCode = `₹{coupon.code}_COPY_₹{Date.now().toString().slice(-4)}`;
     try {
       await duplicateCoupon(coupon._id, newCode);
-
       toast.success("Coupon duplicated successfully");
     } catch (error) {
       toast.error("Failed to duplicate coupon");
     }
+  };
+
+  const handleCopyCode = (code: string) => {
+    navigator.clipboard.writeText(code);
+    toast.success("Coupon code copied to clipboard");
   };
 
   const getTypeIcon = (type: string) => {
@@ -123,19 +118,22 @@ export function CouponsTable({ coupons, isLoading }: CouponTableProps) {
     switch (type) {
       case "percentage":
         return (
-          <Badge variant="default" className="bg-blue-100 text-blue-800">
+          <Badge variant="default" className="bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400">
+            <Percent className="h-3 w-3 mr-1" />
             Percentage
           </Badge>
         );
       case "fixed":
         return (
-          <Badge variant="secondary" className="bg-green-100 text-green-800">
+          <Badge variant="secondary" className="bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
+            <DollarSign className="h-3 w-3 mr-1" />
             Fixed Amount
           </Badge>
         );
       case "free_shipping":
         return (
-          <Badge variant="outline" className="bg-purple-100 text-purple-800">
+          <Badge variant="outline" className="bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400">
+            <Truck className="h-3 w-3 mr-1" />
             Free Shipping
           </Badge>
         );
@@ -146,53 +144,75 @@ export function CouponsTable({ coupons, isLoading }: CouponTableProps) {
 
   const getStatusBadge = (coupon: any) => {
     const isExpired = coupon.end_date && new Date(coupon.end_date) < new Date();
+    const isActive = coupon.is_active !== false;
 
     if (isExpired) {
-      return <Badge variant="destructive">Expired</Badge>;
+      return (
+        <Badge variant="destructive" className="flex items-center gap-1">
+          <Calendar className="h-3 w-3" />
+          Expired
+        </Badge>
+      );
     }
 
-    return coupon.is_active ? (
-      <Badge variant="default" className="bg-green-100 text-green-800">
+    return isActive ? (
+      <Badge variant="default" className="bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400 flex items-center gap-1">
+        <TrendingUp className="h-3 w-3" />
         Active
       </Badge>
     ) : (
-      <Badge variant="secondary">Inactive</Badge>
+      <Badge variant="secondary" className="flex items-center gap-1">
+        <ToggleLeft className="h-3 w-3" />
+        Inactive
+      </Badge>
     );
   };
 
   const formatDiscountValue = (coupon: any) => {
     switch (coupon.type) {
       case "percentage":
-        return `${coupon.value}%`;
+        return `₹{coupon.value}%`;
       case "fixed":
         return formatCurrency(coupon.value);
       case "free_shipping":
         return "Free Shipping";
       default:
-        return coupon.value.toString();
+        return coupon.value?.toString() || "N/A";
     }
   };
 
   const getUsageProgress = (coupon: any) => {
     if (!coupon.usage_limit) return 0;
-    return (coupon.usage_count / coupon.usage_limit) * 100;
+    return Math.min((coupon.usage_count / coupon.usage_limit) * 100, 100);
   };
 
   if (isLoading) {
     return (
       <div className="space-y-4">
-        {Array.from({ length: 5 }).map((_, i) => (
-          <div
-            key={i}
-            className="flex items-center space-x-4 p-4 border rounded-lg"
-          >
-            <div className="h-12 w-12 bg-gray-200 rounded animate-pulse" />
-            <div className="flex-1 space-y-2">
-              <div className="h-4 bg-gray-200 rounded animate-pulse" />
-              <div className="h-3 bg-gray-200 rounded animate-pulse w-2/3" />
-            </div>
-          </div>
-        ))}
+        <div className="rounded-md border">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                {[...Array(7)].map((_, i) => (
+                  <TableHead key={i}>
+                    <Skeleton className="h-4 w-24" />
+                  </TableHead>
+                ))}
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {[...Array(5)].map((_, i) => (
+                <TableRow key={i}>
+                  {[...Array(7)].map((_, j) => (
+                    <TableCell key={j}>
+                      <Skeleton className="h-4 w-full" />
+                    </TableCell>
+                  ))}
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
       </div>
     );
   }
@@ -209,7 +229,7 @@ export function CouponsTable({ coupons, isLoading }: CouponTableProps) {
               <TableHead>Usage</TableHead>
               <TableHead>Valid Until</TableHead>
               <TableHead>Status</TableHead>
-              <TableHead>Actions</TableHead>
+              <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -219,25 +239,35 @@ export function CouponsTable({ coupons, isLoading }: CouponTableProps) {
                   <div className="flex flex-col items-center gap-2">
                     <Percent className="h-8 w-8 text-muted-foreground" />
                     <p className="text-muted-foreground">No coupons found</p>
+                    <p className="text-sm text-muted-foreground">
+                      Create your first coupon to start offering discounts
+                    </p>
                   </div>
                 </TableCell>
               </TableRow>
             ) : (
               coupons.map((coupon) => (
-                <TableRow key={coupon._id}>
+                <TableRow key={coupon._id} className="hover:bg-muted/50">
                   <TableCell>
                     <div>
-                      <p className="font-medium font-mono">{coupon.code}</p>
+                      <div className="flex items-center gap-2">
+                        <p className="font-medium font-mono">{coupon.code}</p>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-6 w-6 p-0"
+                          onClick={() => handleCopyCode(coupon.code)}
+                        >
+                          <Copy className="h-3 w-3" />
+                        </Button>
+                      </div>
                       <p className="text-sm text-muted-foreground truncate max-w-[200px]">
                         {coupon.description}
                       </p>
                     </div>
                   </TableCell>
                   <TableCell>
-                    <div className="flex items-center gap-2">
-                      {getTypeIcon(coupon.type)}
-                      {getTypeBadge(coupon.type)}
-                    </div>
+                    {getTypeBadge(coupon.type)}
                   </TableCell>
                   <TableCell>
                     <div>
@@ -254,7 +284,10 @@ export function CouponsTable({ coupons, isLoading }: CouponTableProps) {
                   <TableCell>
                     <div className="space-y-2">
                       <div className="flex justify-between text-sm">
-                        <span>{coupon.usage_count}</span>
+                        <span className="flex items-center gap-1">
+                          <Users className="h-3 w-3" />
+                          {coupon.usage_count || 0}
+                        </span>
                         <span>{coupon.usage_limit || "∞"}</span>
                       </div>
                       {coupon.usage_limit && (
@@ -268,7 +301,8 @@ export function CouponsTable({ coupons, isLoading }: CouponTableProps) {
                   <TableCell>
                     {coupon.end_date ? (
                       <div>
-                        <p className="text-sm">
+                        <p className="text-sm flex items-center gap-1">
+                          <Calendar className="h-3 w-3" />
                           {new Date(coupon.end_date).toLocaleDateString()}
                         </p>
                         {new Date(coupon.end_date) < new Date() && (
@@ -280,7 +314,7 @@ export function CouponsTable({ coupons, isLoading }: CouponTableProps) {
                     )}
                   </TableCell>
                   <TableCell>{getStatusBadge(coupon)}</TableCell>
-                  <TableCell>
+                  <TableCell className="text-right">
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button variant="ghost" className="h-8 w-8 p-0">
@@ -291,9 +325,7 @@ export function CouponsTable({ coupons, isLoading }: CouponTableProps) {
                       <DropdownMenuContent align="end">
                         <DropdownMenuLabel>Actions</DropdownMenuLabel>
                         <DropdownMenuItem
-                          onClick={() =>
-                            navigator.clipboard.writeText(coupon.code)
-                          }
+                          onClick={() => handleCopyCode(coupon.code)}
                         >
                           <Copy className="mr-2 h-4 w-4" />
                           Copy Code
@@ -301,6 +333,7 @@ export function CouponsTable({ coupons, isLoading }: CouponTableProps) {
                         <DropdownMenuSeparator />
                         <DropdownMenuItem
                           onClick={() => handleToggleStatus(coupon)}
+                          disabled={storeLoading}
                         >
                           {coupon.is_active ? (
                             <>
@@ -316,6 +349,7 @@ export function CouponsTable({ coupons, isLoading }: CouponTableProps) {
                         </DropdownMenuItem>
                         <DropdownMenuItem
                           onClick={() => handleDuplicateCoupon(coupon)}
+                          disabled={storeLoading}
                         >
                           <Copy className="mr-2 h-4 w-4" />
                           Duplicate
@@ -348,7 +382,7 @@ export function CouponsTable({ coupons, isLoading }: CouponTableProps) {
             <AlertDialogTitle>Are you sure?</AlertDialogTitle>
             <AlertDialogDescription>
               This action cannot be undone. This will permanently delete the
-              coupon "{selectedCoupon?.code}".
+              coupon "{selectedCoupon?.code}" and remove all associated data.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -356,9 +390,9 @@ export function CouponsTable({ coupons, isLoading }: CouponTableProps) {
             <AlertDialogAction
               onClick={handleDeleteCoupon}
               className="bg-red-600 hover:bg-red-700"
-              disabled={isLoading}
+              disabled={storeLoading}
             >
-              {isLoading ? "Deleting..." : "Delete"}
+              {storeLoading ? "Deleting..." : "Delete"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

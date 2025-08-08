@@ -32,12 +32,13 @@ import {
   Star,
   Reply,
   Check,
-  X,
+  EyeOff,
   Trash2,
   Eye,
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { useReviewStore } from "@/store/reviewStore";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface Review {
   _id: string;
@@ -61,12 +62,16 @@ export function ReviewsTable({ reviews, isLoading }: ReviewsTableProps) {
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
   const [replyText, setReplyText] = useState("");
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [updatingId, setUpdatingId] = useState<string | null>(null);
 
   const handleStatusChange = async (reviewId: string, status: string) => {
+    setUpdatingId(reviewId);
     try {
       await updateReviewStatus(reviewId, status);
     } catch (error) {
       console.error("Failed to update review status:", error);
+    } finally {
+      setUpdatingId(null);
     }
   };
 
@@ -101,13 +106,26 @@ export function ReviewsTable({ reviews, isLoading }: ReviewsTableProps) {
         {[1, 2, 3, 4, 5].map((star) => (
           <Star
             key={star}
-            className={`h-4 w-4 ${
-              star <= rating ? "text-yellow-400 fill-current" : "text-gray-300"
-            }`}
+            className={`h-4 w-4 ₹{star <= rating ? "text-yellow-400 fill-current" : "text-gray-300"
+              }`}
           />
         ))}
       </div>
     );
+  };
+
+  // Get badge color based on status
+  const getStatusColor = (status: string = "pending") => {
+    switch (status) {
+      case "published":
+        return "bg-green-100 text-green-800 dark:bg-green-800/30 dark:text-green-400";
+      case "pending":
+        return "bg-yellow-100 text-yellow-800 dark:bg-yellow-800/30 dark:text-yellow-400";
+      case "hidden":
+        return "bg-red-100 text-red-800 dark:bg-red-800/30 dark:text-red-400";
+      default:
+        return "bg-gray-100 text-gray-800 dark:bg-gray-800/30 dark:text-gray-400";
+    }
   };
 
   if (isLoading) {
@@ -150,8 +168,8 @@ export function ReviewsTable({ reviews, isLoading }: ReviewsTableProps) {
             <TableHead>Rating</TableHead>
             <TableHead>Review</TableHead>
             <TableHead>Status</TableHead>
-            <TableHead>Date</TableHead>
-            <TableHead className="w-[50px]"></TableHead>
+            <TableHead className="w-[140px]">Date</TableHead>
+            <TableHead className="w-[180px] text-right">Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -163,7 +181,7 @@ export function ReviewsTable({ reviews, isLoading }: ReviewsTableProps) {
                     <AvatarImage
                       src={
                         review.customer_avatar ||
-                        `https://avatar.vercel.sh/${review.user}`
+                        `https://avatar.vercel.sh/₹{review.user}`
                       }
                     />
                     <AvatarFallback>
@@ -193,57 +211,82 @@ export function ReviewsTable({ reviews, isLoading }: ReviewsTableProps) {
                 </div>
               </TableCell>
               <TableCell>
-                <Badge
-                  variant={
-                    review.status === "approved"
-                      ? "default"
-                      : review.status === "pending"
-                      ? "secondary"
-                      : review.status === "rejected"
-                      ? "destructive"
-                      : "default"
-                  }
-                >
-                  {review.status || "published"}
-                </Badge>
-              </TableCell>
-              <TableCell>
-                <div className="text-sm text-muted-foreground">
-                  {review.date}
-                  {/*{formatDistanceToNow(new Date(review.date), { addSuffix: true })}*/}
+                <div className={`₹{getStatusColor(review.status)} rounded-full px-3 py-1 text-xs font-medium max-w-20`}>
+                  {review.status === "published" && "Approved"}
+                  {review.status === "pending" && "Pending"}
+                  {review.status === "hidden" && "Hidden"}
+                  {!review.status && "Published"}
                 </div>
               </TableCell>
               <TableCell>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="sm">
-                      <MoreHorizontal className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem>
-                      <Eye className="mr-2 h-4 w-4" />
-                      View Full Review
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onClick={() => handleStatusChange(review._id, "approved")}
-                    >
-                      <Check className="mr-2 h-4 w-4" />
-                      Approve
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onClick={() => handleStatusChange(review._id, "rejected")}
-                    >
-                      <X className="mr-2 h-4 w-4" />
-                      Reject
-                    </DropdownMenuItem>
-                    <Dialog>
-                      <DialogTrigger asChild>
-                        <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-                          <Reply className="mr-2 h-4 w-4" />
-                          Reply
-                        </DropdownMenuItem>
-                      </DialogTrigger>
+                <div className="text-sm text-muted-foreground">
+                  {/* {formatDistanceToNow(new Date(review.date), { addSuffix: true })} */}
+                  {review.date}
+                </div>
+              </TableCell>
+              <TableCell>
+                <div className="flex justify-end gap-2">
+                  <TooltipProvider>
+                    {/* APPROVE BUTTON */}
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          className="h-8 w-8"
+                          onClick={() => handleStatusChange(review._id, "published")}
+                          disabled={updatingId === review._id || review.status === "published"}
+                        >
+                          {updatingId === review._id ? (
+                            <span className="h-4 w-4 rounded-full border-2 border-blue-500 border-t-transparent animate-spin" />
+                          ) : (
+                            <Check className="h-4 w-4" />
+                          )}
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>Approve Review</TooltipContent>
+                    </Tooltip>
+
+                    {/* HIDE BUTTON */}
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          className="h-8 w-8"
+                          onClick={() => handleStatusChange(review._id, "hidden")}
+                          disabled={updatingId === review._id || review.status === "hidden"}
+                        >
+                          {updatingId === review._id ? (
+                            <span className="h-4 w-4 rounded-full border-2 border-blue-500 border-t-transparent animate-spin" />
+                          ) : (
+                            <EyeOff className="h-4 w-4" />
+                          )}
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>Hide Review</TooltipContent>
+                    </Tooltip>
+
+                    {/* REPLY BUTTON */}
+                    <Dialog open={replyingTo === review._id} onOpenChange={(open) => !open && setReplyingTo(null)}>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <DialogTrigger asChild>
+                            <Button
+                              variant="outline"
+                              size="icon"
+                              className="h-8 w-8"
+                              onClick={() => {
+                                setReplyingTo(review._id);
+                                setReplyText("");
+                              }}
+                            >
+                              <Reply className="h-4 w-4" />
+                            </Button>
+                          </DialogTrigger>
+                        </TooltipTrigger>
+                        <TooltipContent>Reply to Review</TooltipContent>
+                      </Tooltip>
                       <DialogContent>
                         <DialogHeader>
                           <DialogTitle>Reply to Review</DialogTitle>
@@ -264,27 +307,53 @@ export function ReviewsTable({ reviews, isLoading }: ReviewsTableProps) {
                           <div className="flex justify-end space-x-2">
                             <Button
                               variant="outline"
-                              onClick={() => setReplyText("")}
+                              onClick={() => setReplyingTo(null)}
                             >
                               Cancel
                             </Button>
-                            <Button onClick={() => handleReply(review._id)}>
+                            <Button
+                              onClick={() => handleReply(review._id)}
+                              disabled={!replyText.trim()}
+                            >
                               Send Reply
                             </Button>
                           </div>
                         </div>
                       </DialogContent>
                     </Dialog>
-                    <DropdownMenuItem
-                      className="text-destructive"
-                      onClick={() => handleDelete(review._id)}
-                      disabled={deletingId === review._id}
-                    >
-                      <Trash2 className="mr-2 h-4 w-4" />
-                      {deletingId === review._id ? "Deleting..." : "Delete"}
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+
+                    {/* MORE ACTIONS DROPDOWN */}
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          className="h-8 w-8"
+                        >
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem>
+                          <Eye className="mr-2 h-4 w-4" />
+                          View Full Review
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          className="text-destructive focus:bg-destructive/10"
+                          onClick={() => handleDelete(review._id)}
+                          disabled={deletingId === review._id}
+                        >
+                          {deletingId === review._id ? (
+                            <span className="mr-2 h-4 w-4 rounded-full border-2 border-destructive border-t-transparent animate-spin" />
+                          ) : (
+                            <Trash2 className="mr-2 h-4 w-4" />
+                          )}
+                          {deletingId === review._id ? "Deleting..." : "Delete"}
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </TooltipProvider>
+                </div>
               </TableCell>
             </TableRow>
           ))}

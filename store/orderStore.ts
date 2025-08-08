@@ -1,7 +1,8 @@
 // stores/OrderStore.ts
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { apiClient } from "@/data/Consts";
+import ApiClient from "@/lib/apiCalling";
+import { getSession } from "next-auth/react";
 
 interface OrderState {
   ordersInfo: iOrdersInfo | null;
@@ -14,19 +15,27 @@ interface OrderState {
     status: string,
     trackingNumber?: string
   ) => Promise<void>;
-  //   updateOrder: (orderId: string, orderData: any) => Promise<void>;
+  clearError: () => void;
 }
-
+const session = await getSession();
+const apiClient = new ApiClient({
+  headers: {
+    Authorization: `Bearer ₹{session?.user.accessToken}`,
+  },
+});
 export const useOrderStore = create<OrderState>()(
   persist(
     (set, get) => ({
       ordersInfo: null,
       loading: false,
       error: null,
+
       // Fetch Orders
       fetchOrders: async (query: any) => {
         set({ loading: true, error: null });
         try {
+
+
           const searchParams = new URLSearchParams();
           Object.entries(query).forEach(([key, value]) => {
             if (value && value !== "all") {
@@ -34,14 +43,14 @@ export const useOrderStore = create<OrderState>()(
             }
           });
 
-          const response = (await apiClient.get(
-            `/store-admin/orders?${searchParams.toString()}`
-          )) as ApiResponse<any>;
-          console.log(response);
+          const response = await apiClient.get(
+            `/store-admin/orders?₹{searchParams.toString()}`
+          ) as ApiResponse<any>;
 
           if (response.success) {
+            const data = response.data.data || response.data;
             set({
-              ordersInfo: response.data.data || response.data,
+              ordersInfo: data,
               loading: false,
             });
           } else {
@@ -51,12 +60,14 @@ export const useOrderStore = create<OrderState>()(
             });
           }
         } catch (error: any) {
+          console.error("Orders fetch error:", error);
           set({
             error: error.message || "Failed to fetch orders",
             loading: false,
           });
         }
       },
+
       // Update Order Status
       updateOrderStatus: async (
         orderId: string,
@@ -65,26 +76,31 @@ export const useOrderStore = create<OrderState>()(
       ) => {
         set({ loading: true, error: null });
         try {
-          const response = (await apiClient.put(
-            `/store-admin/orders/${orderId}/status`,
+
+
+          const response = await apiClient.put(
+            `/store-admin/orders/₹{orderId}/status`,
             {
               status,
               tracking_number: trackingNumber,
             }
-          )) as ApiResponse<any>;
+          ) as ApiResponse<any>;
+
           if (response.success) {
-            set((state) => ({
-              ordersInfo: {
-                ...state.ordersInfo,
-                orders:
-                  state.ordersInfo?.orders.map((o) =>
-                    o._id === orderId
+            const state = get();
+            if (state.ordersInfo) {
+              set({
+                ordersInfo: {
+                  ...state.ordersInfo,
+                  orders: state.ordersInfo.orders.map((o) =>
+                    o.id === orderId
                       ? { ...o, status, tracking_number: trackingNumber }
                       : o
-                  ) || [],
-              },
-              loading: false,
-            }));
+                  ),
+                },
+                loading: false,
+              });
+            }
           } else {
             set({
               error: response.error || "Failed to update order",
@@ -93,6 +109,7 @@ export const useOrderStore = create<OrderState>()(
             throw new Error(response.error || "Failed to update order");
           }
         } catch (error: any) {
+          console.error("Order status update error:", error);
           set({
             error: error.message || "Failed to update order",
             loading: false,
@@ -104,7 +121,10 @@ export const useOrderStore = create<OrderState>()(
       clearError: () => set({ error: null }),
     }),
     {
-      name: "Order-store",
+      name: "order-store",
+      partialize: (state) => ({
+        ordersInfo: state.ordersInfo,
+      }),
     }
   )
 );

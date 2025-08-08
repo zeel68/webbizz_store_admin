@@ -270,7 +270,7 @@ export default function OrdersPage() {
           </CardTitle>
           <CardDescription>
             View and manage all orders from your store
-            {hasActiveFilters() && ` (${totalItems} filtered results)`}
+            {hasActiveFilters() && ` (₹{totalItems} filtered results)`}
           </CardDescription>
         </CardHeader>
         <CardContent>

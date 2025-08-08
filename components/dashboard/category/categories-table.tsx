@@ -31,6 +31,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { CategoryDetailsDialog } from "./category-details";
+import { useCategoryStore } from "@/store/categoryStore";
 
 
 
@@ -53,7 +54,7 @@ export function CategoriesTable({
     onAddProduct,
     onAddSubcategory,
 }: CategoriesTableProps) {
-    // const { deleteCategory } = useStoreAdminStore();
+    const { deleteCategory } = useCategoryStore();
     const [deletingId, setDeletingId] = useState<string | null>(null);
     const [selectedCategory, setSelectedCategory] = useState<iStoreCategory | null>(
         null,
@@ -65,10 +66,10 @@ export function CategoriesTable({
         useState<iStoreCategory | null>(null);
 
     const handleDelete = async (id: string, name: string) => {
-        if (confirm(`Are you sure you want to delete the category "${name}"?`)) {
+        if (confirm(`Are you sure you want to delete the category "₹{name}"?`)) {
             setDeletingId(id);
             try {
-                // await deleteCategory(id);
+                await deleteCategory(id);
                 toast.success("Category deleted successfully");
                 if (onDelete) onDelete(id);
             } catch (error: any) {
