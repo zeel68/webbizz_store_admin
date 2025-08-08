@@ -91,8 +91,10 @@ export function CreateCouponDialog({
     }
 
     // Value validation
-    if (!formData.value || Number(formData.value) <= 0) {
-      newErrors.value = "Valid discount value is required";
+    if ((!formData.value || Number(formData.value) <= 0)) {
+      if (formData.type != "free_shipping") {
+        newErrors.value = "Valid discount value is required";
+      }
     } else if (formData.type === "percentage" && Number(formData.value) > 100) {
       newErrors.value = "Percentage cannot exceed 100%";
     } else if (formData.type === "fixed" && Number(formData.value) > 10000) {
