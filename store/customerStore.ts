@@ -24,7 +24,7 @@ const initializeStore = async () => {
     const session = await getSession();
     const apiClient = new ApiClient({
         headers: {
-            Authorization: `Bearer ₹{session?.user.accessToken}`,
+            Authorization: `Bearer ${session?.user.accessToken}`,
         },
     });
 

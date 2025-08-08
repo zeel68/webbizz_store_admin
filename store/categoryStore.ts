@@ -22,7 +22,7 @@ interface CategoryState {
 const session = await getSession();
 const apiClient = new ApiClient({
     headers: {
-        Authorization: `Bearer ₹{session?.user.accessToken}`,
+        Authorization: `Bearer ${session?.user.accessToken}`,
     },
 });
 export const useCategoryStore = create<CategoryState>()(
@@ -57,6 +57,7 @@ export const useCategoryStore = create<CategoryState>()(
                     const response = await apiClient.get(
                         "/store-admin/getStoreCategories",
                     ) as any;
+                    console.log(response);
 
                     if (response.success) {
                         const data = response.data.data || response.data;

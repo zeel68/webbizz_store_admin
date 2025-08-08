@@ -92,7 +92,7 @@ export function ProductsTable({
 
         const remainingStars = 5 - Math.ceil(rating)
         for (let i = 0; i < remainingStars; i++) {
-            stars.push(<Star key={`empty-₹{i}`} className="h-3 w-3 text-gray-300" />)
+            stars.push(<Star key={`empty-${i}`} className="h-3 w-3 text-gray-300" />)
         }
 
         return stars

@@ -569,7 +569,7 @@ export default function CouponsPage() {
           )}
 
           {/* Empty State */}
-          {totalItems === 0 && !loading && (
+          {/* {totalItems === 0 && !loading && (
             <div className="text-center py-12">
               <Percent className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
               <h3 className="text-lg font-semibold mb-2">
@@ -587,7 +587,7 @@ export default function CouponsPage() {
                 </Button>
               )}
             </div>
-          )}
+          )} */}
         </CardContent>
       </Card>
     </div>

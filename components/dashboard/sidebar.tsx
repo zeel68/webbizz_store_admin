@@ -104,8 +104,8 @@ const navigation = [
     icon: Gift,
     children: [
       { name: "Coupons", href: "/marketing/coupons" },
-      { name: "Campaigns", href: "/marketing/campaigns" },
-      { name: "Email Templates", href: "/marketing/email" },
+      // { name: "Campaigns", href: "/marketing/campaigns" },
+      // { name: "Email Templates", href: "/marketing/email" },
     ],
   },
   {
@@ -113,17 +113,17 @@ const navigation = [
     href: "/reviews",
     icon: Star,
   },
-  {
-    name: "Reports",
-    href: "/reports",
-    icon: FileText,
-    children: [
-      { name: "Sales Report", href: "/reports/sales" },
-      { name: "Product Report", href: "/reports/products" },
-      { name: "Customer Report", href: "/reports/customers" },
-      { name: "Inventory Report", href: "/reports/inventory" },
-    ],
-  },
+  // {
+  //   name: "Reports",
+  //   href: "/reports",
+  //   icon: FileText,
+  //   children: [
+  //     { name: "Sales Report", href: "/reports/sales" },
+  //     { name: "Product Report", href: "/reports/products" },
+  //     { name: "Customer Report", href: "/reports/customers" },
+  //     { name: "Inventory Report", href: "/reports/inventory" },
+  //   ],
+  // },
   {
     name: "HomePage",
     href: "/homepage",
