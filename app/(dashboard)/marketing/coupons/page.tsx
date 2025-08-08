@@ -416,7 +416,7 @@ export default function CouponsPage() {
                 </Select>
               </div>
 
-              <div className="space-y-2">
+              {/* <div className="space-y-2">
                 <label className="text-sm font-medium flex items-center">
                   <Calendar className="mr-1 h-4 w-4" /> Date From
                 </label>
@@ -425,9 +425,9 @@ export default function CouponsPage() {
                   value={filters.date_from}
                   onChange={(e) => updateFilter("date_from", e.target.value)}
                 />
-              </div>
+              </div> */}
 
-              <div className="space-y-2">
+              {/* <div className="space-y-2">
                 <label className="text-sm font-medium flex items-center">
                   <Calendar className="mr-1 h-4 w-4" /> Date To
                 </label>
@@ -436,7 +436,7 @@ export default function CouponsPage() {
                   value={filters.date_to}
                   onChange={(e) => updateFilter("date_to", e.target.value)}
                 />
-              </div>
+              </div> */}
             </div>
           )}
 
