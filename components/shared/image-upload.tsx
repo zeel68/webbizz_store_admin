@@ -13,11 +13,12 @@ interface ImageUploadProps {
   onSelectFiles: (files: File[]) => void
   onRemove?: (index: number) => void
   onSetPrimary?: (index: number) => void
-  value?: File[]
+  value?: (File | string)[]
   primaryIndex?: number
   type?: "standard" | "profile" | "cover"
   showPreview?: boolean
   multiple?: boolean
+  showLocalPreview: boolean
 }
 
 export default function ImageUpload({
@@ -30,17 +31,32 @@ export default function ImageUpload({
   type = "standard",
   showPreview = true,
   multiple = true,
+  showLocalPreview = false
 }: ImageUploadProps) {
-  const [localPreviews, setLocalPreviews] = useState<string[]>([])
+  const [previews, setPreviews] = useState<string[]>([])
 
   useEffect(() => {
-    const urls = value.map((file) => URL.createObjectURL(file))
-    setLocalPreviews(urls)
+    // Generate preview URLs
+    const newPreviews: string[] = []
+    const fileUrls: string[] = []
 
+    value.forEach((item) => {
+      if (typeof item === "string") {
+        newPreviews.push(item) // remote URL
+      } else if (showLocalPreview && item instanceof File) {
+        const url = URL.createObjectURL(item)
+        newPreviews.push(url)
+        fileUrls.push(url) // track for cleanup
+      }
+    })
+
+    setPreviews(newPreviews)
+
+    // Cleanup object URLs
     return () => {
-      urls.forEach((url) => URL.revokeObjectURL(url))
+      fileUrls.forEach(url => URL.revokeObjectURL(url))
     }
-  }, [value])
+  }, [value, showLocalPreview])
 
   const handleImageChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -68,11 +84,11 @@ export default function ImageUpload({
 
   const renderPreview = () => (
     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
-      {localPreviews.map((src, idx) => (
+      {previews.map((src, idx) => (
         <div key={idx} className="relative group">
           <img
             src={src || "/placeholder.svg"}
-            alt={`Preview ${idx + 1}`}
+            alt={`Preview ₹{idx + 1}`}
             className={cn(
               "w-full h-24 object-cover rounded-md border-2 transition-all",
               primaryIndex === idx ? "border-blue-500 ring-2 ring-blue-200" : "border-gray-200",
@@ -143,7 +159,7 @@ export default function ImageUpload({
         </div>
       </div>
 
-      {showPreview && localPreviews.length > 0 && (
+      {showPreview && previews.length > 0 && (
         <div className="space-y-2">
           <Label>Preview</Label>
           {renderPreview()}

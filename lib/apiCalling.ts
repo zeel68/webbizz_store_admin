@@ -21,7 +21,7 @@ interface ApiResponse<T> {
 
 class ApiClient {
   mode = process.env.NODE_ENV || "production";
-  private baseURL: string = "https://dhaneri-backend-7nkti8s6z-zeshs-projects.vercel.app/api";
+  private baseURL: string = "https://dhaneri-backend.vercel.app/api";
   private axiosInstance: AxiosInstance;
   constructor(config?: AxiosRequestConfig) {
     this.axiosInstance = axios.create({
@@ -35,7 +35,7 @@ class ApiClient {
     //     try {
     //       const session = await getSession()
     //       if (session?.accessToken) {
-    //         config.headers.Authorization = `Bearer ${session.accessToken}`
+    //         config.headers.Authorization = `Bearer ₹{session.accessToken}`
     //       }
     //     } catch (error) {
     //       console.warn("Failed to get session for API request:", error)

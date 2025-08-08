@@ -125,6 +125,11 @@ const navigation = [
     ],
   },
   {
+    name: "HomePage",
+    href: "/homepage",
+    icon: Settings,
+  },
+  {
     name: "Settings",
     href: "/settings",
     icon: Settings,
