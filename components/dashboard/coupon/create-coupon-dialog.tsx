@@ -493,7 +493,7 @@ export function CreateCouponDialog({
               </Label>
               <Input
                 id="start_date"
-                type="datetime-local"
+                type="date"
                 value={formData.start_date}
                 onChange={(e) => handleInputChange("start_date", e.target.value)}
                 disabled={isFormDisabled}
@@ -506,7 +506,7 @@ export function CreateCouponDialog({
               </Label>
               <Input
                 id="end_date"
-                type="datetime-local"
+                type="date"
                 value={formData.end_date}
                 onChange={(e) => handleInputChange("end_date", e.target.value)}
                 className={errors.end_date ? "border-red-500" : ""}
