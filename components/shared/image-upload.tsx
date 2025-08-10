@@ -1,170 +1,408 @@
 "use client"
 
 import type React from "react"
-import { useCallback, useEffect, useState } from "react"
-import { Upload, Trash2, Star } from "lucide-react"
-import { Input } from "../ui/input"
-import { Label } from "../ui/label"
-import { Button } from "../ui/button"
+import { useState, useCallback, useRef } from "react"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import { toast } from "sonner"
+import { Upload, X, Star, ImageIcon, AlertCircle, Loader2, Eye } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 interface ImageUploadProps {
-  disabled?: boolean
   onSelectFiles: (files: File[]) => void
-  onRemove?: (index: number) => void
+  onRemove: (index: number) => void
   onSetPrimary?: (index: number) => void
-  value?: (File | string)[]
+  value: (File | string)[]
   primaryIndex?: number
-  type?: "standard" | "profile" | "cover"
-  showPreview?: boolean
   multiple?: boolean
-  showLocalPreview: boolean
+  maxFiles?: number
+  maxSize?: number // in MB
+  acceptedTypes?: string[]
+  showPreview?: boolean
+  showLocalPreview?: boolean
+  disabled?: boolean
+  className?: string
 }
 
-export default function ImageUpload({
-  disabled = false,
+const ImageUpload: React.FC<ImageUploadProps> = ({
   onSelectFiles,
   onRemove,
   onSetPrimary,
   value = [],
   primaryIndex = 0,
-  type = "standard",
-  showPreview = true,
   multiple = true,
-  showLocalPreview = false
-}: ImageUploadProps) {
-  const [previews, setPreviews] = useState<string[]>([])
+  maxFiles = 10,
+  maxSize = 5, // 5MB default
+  acceptedTypes = ["image/jpeg", "image/png", "image/webp", "image/gif"],
+  showPreview = true,
+  showLocalPreview = true,
+  disabled = false,
+  className,
+}) => {
+  const [isDragging, setIsDragging] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
-  useEffect(() => {
-    // Generate preview URLs
-    const newPreviews: string[] = []
-    const fileUrls: string[] = []
-
-    value.forEach((item) => {
-      if (typeof item === "string") {
-        newPreviews.push(item) // remote URL
-      } else if (showLocalPreview && item instanceof File) {
-        const url = URL.createObjectURL(item)
-        newPreviews.push(url)
-        fileUrls.push(url) // track for cleanup
+  const validateFile = useCallback(
+    (file: File): string | null => {
+      if (!acceptedTypes.includes(file.type)) {
+        return `File type ${file.type} is not supported. Please use: ${acceptedTypes.join(", ")}`
       }
-    })
 
-    setPreviews(newPreviews)
+      if (file.size > maxSize * 1024 * 1024) {
+        return `File size must be less than ${maxSize}MB`
+      }
 
-    // Cleanup object URLs
-    return () => {
-      fileUrls.forEach(url => URL.revokeObjectURL(url))
-    }
-  }, [value, showLocalPreview])
-
-  const handleImageChange = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      if (!e.target.files || disabled) return
-      const files = Array.from(e.target.files)
-      onSelectFiles(files)
-      e.target.value = ""
+      return null
     },
-    [disabled, onSelectFiles],
+    [acceptedTypes, maxSize],
   )
+
+  const handleFileSelect = useCallback(
+    async (files: FileList | null) => {
+      if (!files || disabled) return
+
+      setIsLoading(true)
+      const validFiles: File[] = []
+      const errors: string[] = []
+
+      // Check total file limit
+      if (!multiple && files.length > 1) {
+        errors.push("Only one file is allowed")
+        setIsLoading(false)
+        toast.error(errors[0])
+        return
+      }
+
+      if (value.length + files.length > maxFiles) {
+        errors.push(`Maximum ${maxFiles} files allowed`)
+        setIsLoading(false)
+        toast.error(errors[0])
+        return
+      }
+
+      // Validate each file
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i]
+        const error = validateFile(file)
+
+        if (error) {
+          errors.push(`${file.name}: ${error}`)
+        } else {
+          validFiles.push(file)
+        }
+      }
+
+      // Show errors if any
+      if (errors.length > 0) {
+        errors.forEach((error) => toast.error(error))
+      }
+
+      // Add valid files
+      if (validFiles.length > 0) {
+        onSelectFiles(validFiles)
+        toast.success(`${validFiles.length} file${validFiles.length > 1 ? "s" : ""} added successfully`)
+      }
+
+      setIsLoading(false)
+    },
+    [disabled, multiple, maxFiles, value.length, validateFile, onSelectFiles],
+  )
+
+  const handleDragOver = useCallback(
+    (e: React.DragEvent) => {
+      e.preventDefault()
+      if (!disabled) {
+        setIsDragging(true)
+      }
+    },
+    [disabled],
+  )
+
+  const handleDragLeave = useCallback((e: React.DragEvent) => {
+    e.preventDefault()
+    setIsDragging(false)
+  }, [])
+
+  const handleDrop = useCallback(
+    (e: React.DragEvent) => {
+      e.preventDefault()
+      setIsDragging(false)
+
+      if (disabled) return
+
+      const files = e.dataTransfer.files
+      handleFileSelect(files)
+    },
+    [disabled, handleFileSelect],
+  )
+
+  const handleInputChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      handleFileSelect(e.target.files)
+      // Reset input value to allow selecting the same file again
+      if (fileInputRef.current) {
+        fileInputRef.current.value = ""
+      }
+    },
+    [handleFileSelect],
+  )
+
+  const getImageUrl = useCallback((item: File | string): string => {
+    if (typeof item === "string") {
+      return item
+    }
+    return URL.createObjectURL(item)
+  }, [])
+
+  const getFileName = useCallback((item: File | string): string => {
+    if (typeof item === "string") {
+      return item.split("/").pop() || "Image"
+    }
+    return item.name
+  }, [])
 
   const handleRemove = useCallback(
     (index: number) => {
-      onRemove?.(index)
+      if (disabled) return
+      onRemove(index)
+      toast.success("Image removed")
     },
-    [onRemove],
+    [disabled, onRemove],
   )
 
   const handleSetPrimary = useCallback(
     (index: number) => {
-      onSetPrimary?.(index)
+      if (disabled || !onSetPrimary) return
+      onSetPrimary(index)
+      toast.success("Primary image updated")
     },
-    [onSetPrimary],
+    [disabled, onSetPrimary],
   )
 
-  const renderPreview = () => (
-    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
-      {previews.map((src, idx) => (
-        <div key={idx} className="relative group">
-          <img
-            src={src || "/placeholder.svg"}
-            alt={`Preview ${idx + 1}`}
-            className={cn(
-              "w-full h-24 object-cover rounded-md border-2 transition-all",
-              primaryIndex === idx ? "border-blue-500 ring-2 ring-blue-200" : "border-gray-200",
-            )}
-          />
-          <div className="absolute inset-0 bg-black bg-opacity-50 opacity-0 group-hover:opacity-100 transition-opacity rounded-md flex items-center justify-center gap-1">
-            {multiple && onSetPrimary && (
-              <Button
-                type="button"
-                variant={primaryIndex === idx ? "default" : "secondary"}
-                size="sm"
-                className="h-6 w-6 p-0"
-                onClick={() => handleSetPrimary(idx)}
-                disabled={disabled}
-                title={primaryIndex === idx ? "Primary image" : "Set as primary"}
-              >
-                <Star className={cn("h-3 w-3", primaryIndex === idx && "fill-current")} />
-              </Button>
-            )}
-            <Button
-              type="button"
-              variant="destructive"
-              size="sm"
-              className="h-6 w-6 p-0"
-              onClick={() => handleRemove(idx)}
-              disabled={disabled}
-            >
-              <Trash2 className="h-3 w-3" />
-            </Button>
-          </div>
-          {primaryIndex === idx && multiple && (
-            <div className="absolute -top-2 -right-2 bg-blue-500 text-white text-xs px-1 py-0.5 rounded-full">
-              Primary
-            </div>
-          )}
-        </div>
-      ))}
-    </div>
-  )
+  const openFileDialog = useCallback(() => {
+    if (disabled || !fileInputRef.current) return
+    fileInputRef.current.click()
+  }, [disabled])
 
   return (
-    <div className="space-y-4">
-      {type === "profile" && <Label>Profile Image</Label>}
-      {type === "cover" && <Label>Cover Image</Label>}
-      {type === "standard" && <Label>Images</Label>}
-
-      <div
+    <div className={cn("space-y-4", className)}>
+      {/* Upload Area */}
+      <Card
         className={cn(
-          "border-2 border-dashed rounded-lg p-4 transition-colors",
-          disabled
-            ? "bg-muted/50 border-muted-foreground/25 cursor-not-allowed"
-            : "bg-background border-muted-foreground/50 hover:border-primary/50 cursor-pointer",
+          "border-2 border-dashed transition-all duration-200 cursor-pointer",
+          isDragging && !disabled ? "border-primary bg-primary/5" : "border-muted-foreground/25",
+          disabled ? "opacity-50 cursor-not-allowed" : "hover:border-primary/50 hover:bg-muted/50",
         )}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
+        onClick={openFileDialog}
       >
-        <div className="text-center space-y-3">
-          <Upload
-            className={cn("h-8 w-8 mx-auto", disabled ? "text-muted-foreground/25" : "text-muted-foreground/50")}
-          />
-          <p className="text-sm text-muted-foreground">Click to upload or drag and drop</p>
-          <Input
+        <CardContent className="flex flex-col items-center justify-center py-8 px-4">
+          {isLoading ? (
+            <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
+          ) : (
+            <Upload
+              className={cn("h-8 w-8 mb-4", isDragging && !disabled ? "text-primary" : "text-muted-foreground")}
+            />
+          )}
+
+          <div className="text-center space-y-2">
+            <p className="text-sm font-medium">
+              {isLoading ? "Processing files..." : "Drop images here or click to browse"}
+            </p>
+            <p className="text-xs text-muted-foreground">
+              {multiple ? `Up to ${maxFiles} files` : "Single file only"} • Max {maxSize}MB each •
+              {acceptedTypes
+                .map((type) => type.split("/")[1])
+                .join(", ")
+                .toUpperCase()}
+            </p>
+          </div>
+
+          <input
+            ref={fileInputRef}
             type="file"
+            accept={acceptedTypes.join(",")}
             multiple={multiple}
-            accept="image/*"
-            onChange={handleImageChange}
-            className="mt-2 max-w-xs mx-auto"
+            onChange={handleInputChange}
+            className="hidden"
             disabled={disabled}
           />
-        </div>
-      </div>
+        </CardContent>
+      </Card>
 
-      {showPreview && previews.length > 0 && (
+      {/* Image Preview Grid */}
+      {showPreview && value.length > 0 && (
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+          {value.map((item, index) => (
+            <Card key={index} className="relative group overflow-hidden">
+              <div className="aspect-square relative">
+                {showLocalPreview ? (
+                  <img
+                    src={getImageUrl(item) || "/placeholder.svg"}
+                    alt={`Upload ${index + 1}`}
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      const target = e.target as HTMLImageElement
+                      target.src = "/placeholder.svg?height=200&width=200&text=Error"
+                    }}
+                  />
+                ) : (
+                  <div className="w-full h-full bg-muted flex items-center justify-center">
+                    <ImageIcon className="h-8 w-8 text-muted-foreground" />
+                  </div>
+                )}
+
+                {/* Primary Badge */}
+                {onSetPrimary && index === primaryIndex && (
+                  <Badge className="absolute top-2 left-2 bg-primary text-primary-foreground" variant="default">
+                    <Star className="h-3 w-3 mr-1 fill-current" />
+                    Primary
+                  </Badge>
+                )}
+
+                {/* Action Buttons Overlay */}
+                <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center gap-2">
+                  {onSetPrimary && index !== primaryIndex && (
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleSetPrimary(index)
+                      }}
+                      disabled={disabled}
+                      className="h-8 w-8 p-0"
+                    >
+                      <Star className="h-4 w-4" />
+                    </Button>
+                  )}
+
+                  {showLocalPreview && (
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        window.open(getImageUrl(item), "_blank")
+                      }}
+                      className="h-8 w-8 p-0"
+                    >
+                      <Eye className="h-4 w-4" />
+                    </Button>
+                  )}
+
+                  <Button
+                    size="sm"
+                    variant="destructive"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      handleRemove(index)
+                    }}
+                    disabled={disabled}
+                    className="h-8 w-8 p-0"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+
+              {/* File Info */}
+              <div className="p-2 bg-background">
+                <p className="text-xs font-medium truncate" title={getFileName(item)}>
+                  {getFileName(item)}
+                </p>
+                {typeof item !== "string" && (
+                  <p className="text-xs text-muted-foreground">{(item.size / 1024 / 1024).toFixed(2)} MB</p>
+                )}
+              </div>
+            </Card>
+          ))}
+        </div>
+      )}
+
+      {/* File List (Alternative to Preview) */}
+      {!showPreview && value.length > 0 && (
         <div className="space-y-2">
-          <Label>Preview</Label>
-          {renderPreview()}
+          <h4 className="text-sm font-medium">Uploaded Files ({value.length})</h4>
+          <div className="space-y-2">
+            {value.map((item, index) => (
+              <div key={index} className="flex items-center justify-between p-2 bg-muted rounded-lg">
+                <div className="flex items-center gap-2 flex-1 min-w-0">
+                  <ImageIcon className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                  <span className="text-sm truncate" title={getFileName(item)}>
+                    {getFileName(item)}
+                  </span>
+                  {onSetPrimary && index === primaryIndex && (
+                    <Badge variant="outline" className="ml-2">
+                      <Star className="h-3 w-3 mr-1 fill-current" />
+                      Primary
+                    </Badge>
+                  )}
+                </div>
+
+                <div className="flex items-center gap-1">
+                  {onSetPrimary && index !== primaryIndex && (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => handleSetPrimary(index)}
+                      disabled={disabled}
+                      className="h-8 w-8 p-0"
+                    >
+                      <Star className="h-4 w-4" />
+                    </Button>
+                  )}
+
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => handleRemove(index)}
+                    disabled={disabled}
+                    className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Upload Stats */}
+      {value.length > 0 && (
+        <div className="flex items-center justify-between text-xs text-muted-foreground">
+          <span>
+            {value.length} of {maxFiles} files
+          </span>
+          {multiple && value.length < maxFiles && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={openFileDialog}
+              disabled={disabled}
+              className="h-7 bg-transparent"
+            >
+              <Upload className="h-3 w-3 mr-1" />
+              Add More
+            </Button>
+          )}
+        </div>
+      )}
+
+      {/* Error State */}
+      {value.length === 0 && !isLoading && (
+        <div className="text-center py-4">
+          <AlertCircle className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
+          <p className="text-sm text-muted-foreground">No images uploaded yet</p>
         </div>
       )}
     </div>
   )
 }
+
+export default ImageUpload

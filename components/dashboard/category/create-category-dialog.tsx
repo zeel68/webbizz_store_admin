@@ -176,7 +176,7 @@ export function CreateCategoryDialog({
 
       const categoryData = {
         display_name:
-          formData.display_name.toLowerCase().replace(/\s+/g, "_"),
+          formData.display_name.toLowerCase(),
         description: formData.description,
         parent_id: formData.parent_id || null,
         sort_order: Number(formData.sort_order),
@@ -413,7 +413,7 @@ export function CreateCategoryDialog({
                         <Label>Category Image</Label>
                         <div className="flex flex-col gap-3">
                           <ImageUpload
-                            type="standard"
+                            // type="standard"
                             value={selectedImages}
                             onSelectFiles={handleImageSelect}
                             onRemove={handleImageRemove}

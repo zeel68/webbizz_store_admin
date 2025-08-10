@@ -21,7 +21,7 @@ interface ProductState {
     deleteProduct: (id: string) => Promise<void>
     fetchProductStats: () => Promise<void>
     assignProductsToCategory: (prodoductsId: string[], categoryId: string) => Promise<void>
-
+    togglePoductStatus: (productId: string) => Promise<void>
     // Variant actions
     createVariant: (productId: string, variant: Omit<iProductVariant, '_id' | 'product_id'>) => Promise<void>
     updateVariant: (variantId: string, variant: Partial<iProductVariant>) => Promise<void>
@@ -93,26 +93,18 @@ export const useProductStore = create<ProductState>()(
             },
 
             // Create new product
-            createProduct: async (data: iProductFormData, images?: File[]) => {
+            createProduct: async (data: iProductFormData) => {
                 set({ loading: true, error: null })
                 try {
-                    const formData = new FormData()
 
-                    // Add product data
-                    formData.append('productData', JSON.stringify(data))
+                    console.log(data);
 
-                    // Add images if provided
-                    if (images && images.length > 0) {
-                        images.forEach((image, index) => {
-                            formData.append(`images`, image)
-                        })
-                    }
-
-                    const response = await apiClient.post<iProduct>("/store-admin/products", formData, {
-                        headers: { 'Content-Type': 'multipart/form-data' }
-                    })
+                    const response = await apiClient.post<iProduct>("/store-admin/products", data)
+                    console.log(response);
 
                     if (response.success) {
+                        console.log("prod", response);
+
                         set({ loading: false })
                         // Refresh products list
                         get().fetchProducts()
@@ -131,7 +123,7 @@ export const useProductStore = create<ProductState>()(
 
 
                     const response = await apiClient.put<iProduct>(`/store-admin/products/${id}`, data)
-                    console.log(response);
+                    console.log("res", response);
 
                     if (response.success) {
                         set({ loading: false, selectedProduct: response.data })
@@ -251,6 +243,8 @@ export const useProductStore = create<ProductState>()(
                     throw error
                 }
             },
+            togglePoductStatus: async (productId: string) => { },
+
             // Clear error
             clearError: () => set({ error: null }),
 

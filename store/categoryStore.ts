@@ -17,6 +17,7 @@ interface CategoryState {
     createCategory: (categoryData: any) => Promise<any>;
     updateCategory: (id: string, categoryData: any) => Promise<any>;
     deleteCategory: (id: string) => Promise<void>;
+    toggleCategoryStatus: (id: string, status: boolean) => Promise<void>
     clearError: () => void;
 }
 const session = await getSession();
@@ -70,6 +71,7 @@ export const useCategoryStore = create<CategoryState>()(
 
                     } else {
                         set({
+                            categories: [],
                             error: response.error || "Failed to fetch categories",
                             loading: false,
                         });
@@ -111,10 +113,7 @@ export const useCategoryStore = create<CategoryState>()(
                     if (response.success) {
                         const state = get();
                         const newCategory = response.data.data;
-                        set({
-                            categories: [newCategory, ...state.categories],
-                            loading: false,
-                        });
+                        get().fetchCategories()
                         return newCategory;
                     } else {
                         const errorMsg = response.error || "Failed to create category";
@@ -176,11 +175,31 @@ export const useCategoryStore = create<CategoryState>()(
                     ) as any;
 
                     if (response.success) {
-                        const state = get();
-                        set({
-                            categories: state.categories.filter((c) => c._id !== id),
-                            loading: false,
-                        });
+
+                        get().fetchCategories()
+                    } else {
+                        const errorMsg = response.error || "Failed to delete category";
+                        set({ error: errorMsg, loading: false });
+                        throw new Error(errorMsg);
+                    }
+                } catch (error: any) {
+                    const errorMessage = error.message || "Failed to delete category";
+                    set({ error: errorMessage, loading: false });
+                    throw new Error(errorMessage);
+                }
+            },
+            toggleCategoryStatus: async (id: string, status: boolean) => {
+                set({ loading: true, error: null });
+                try {
+
+
+                    const response = await apiClient.post(
+                        `/store-admin/category/${id}/status`, { status }
+                    ) as any;
+
+                    if (response.success) {
+
+                        get().fetchCategories()
                     } else {
                         const errorMsg = response.error || "Failed to delete category";
                         set({ error: errorMsg, loading: false });

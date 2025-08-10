@@ -1,441 +1,306 @@
-"use client";
+"use client"
 
-import { useState, useEffect } from "react";
+import type React from "react"
+import { useState, useEffect } from "react"
+import { Button } from "@/components/ui/button"
 import {
     Dialog,
     DialogContent,
+    DialogDescription,
+    DialogFooter,
     DialogHeader,
     DialogTitle,
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Checkbox } from "@/components/ui/checkbox";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
-import { toast } from "sonner";
-import { Search, Package, Plus, Loader2, Filter, X, DollarSign, Tag } from 'lucide-react';
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "@/components/ui/select";
-import { useProductStore } from "@/store/productStore";
-import { useCategoryStore } from "@/store/categoryStore";
-
+} from "@/components/ui/dialog"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Checkbox } from "@/components/ui/checkbox"
+import { Badge } from "@/components/ui/badge"
+import { ScrollArea } from "@/components/ui/scroll-area"
+import { Separator } from "@/components/ui/separator"
+import { toast } from "sonner"
+import { Loader2, Save, Search, Package, Tag, X } from "lucide-react"
+import { useProductStore } from "@/store/productStore"
+import { useCategoryStore } from "@/store/categoryStore"
+import { Skeleton } from "@/components/ui/skeleton"
 
 interface AddProductsToCategoryDialogProps {
-    open: boolean;
-    onOpenChange: (open: boolean) => void;
-    category: iStoreCategory | null;
-    onProductsAdded?: () => void;
+    open: boolean
+    onOpenChange: (open: boolean) => void
+    category?: any
 }
 
-export function AddProductsToCategoryDialog({
-    open,
-    onOpenChange,
-    category,
-    onProductsAdded,
-}: AddProductsToCategoryDialogProps) {
-    const { productInfo, fetchProducts, assignProductsToCategory, loading } = useProductStore();
-    const { categories } = useCategoryStore();
+interface Product {
+    _id: string
+    name: string
+    price: number
+    images?: string[]
+    store_category_id?: string
+    is_active: boolean
+}
 
-    const [searchTerm, setSearchTerm] = useState("");
-    const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
-    const [isSubmitting, setIsSubmitting] = useState(false);
-    const [filterStatus, setFilterStatus] = useState<string>("all");
-    const [filterCategory, setFilterCategory] = useState<string>("unassigned");
-    const [priceRange, setPriceRange] = useState<{ min: string; max: string }>({
-        min: "",
-        max: "",
-    });
+export function AddProductsToCategoryDialog({ open, onOpenChange, category }: AddProductsToCategoryDialogProps) {
+    const { productInfo, fetchProducts, loading: productsLoading, assignProductsToCategory } = useProductStore()
+    const { loading: categoryLoading } = useCategoryStore()
+
+    const [selectedProducts, setSelectedProducts] = useState<string[]>([])
+    const [searchTerm, setSearchTerm] = useState("")
+    const [isSubmitting, setIsSubmitting] = useState(false)
+    const [currentPage, setCurrentPage] = useState(1)
+    const itemsPerPage = 10
 
     // Fetch products when dialog opens
     useEffect(() => {
         if (open) {
             fetchProducts({
-                search: searchTerm,
-                limit: 100,
-            });
-            console.log(productInfo);
-
+                page: 1,
+                limit: 100, // Get more products for selection
+                search: searchTerm || undefined,
+            })
+            setSelectedProducts([])
+            setCurrentPage(1)
         }
-    }, [open, fetchProducts]);
-    const filteredProducts = productInfo?.products ?? []
-    // Filter products based on criteria
-    // const filteredProducts = productInfo?.products?.filter((product) => {
-    //     // Search filter
-    //     const matchesSearch =
-    //         product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    //         product.sku?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    //         product.brand?.toLowerCase().includes(searchTerm.toLowerCase());
+    }, [open, searchTerm, fetchProducts])
 
-    //     // Status filter
-    //     const matchesStatus =
-    //         filterStatus === "all" ||
-    //         (filterStatus === "active" && product.is_active) ||
-    //         (filterStatus === "inactive" && !product.is_active) ||
-    //         (filterStatus === "featured" && product.is_featured);
+    // Filter products based on search term and exclude already assigned products
+    const filteredProducts = (productInfo?.products || []).filter((product) => {
+        const matchesSearch = !searchTerm || product.name.toLowerCase().includes(searchTerm.toLowerCase())
 
-    //     // Category filter
-    //     const matchesCategory =
-    //         filterCategory === "all" ||
-    //         (filterCategory === "unassigned" && !product.store_category_id) ||
-    //         (filterCategory === "assigned" && product.store_category_id) ||
-    //         product.store_category_id === filterCategory;
+        // Optionally exclude products already in this category
+        const notInCategory = !category || product.store_category_id !== category._id
 
-    //     // Price range filter
-    //     const matchesPrice =
-    //         (!priceRange.min || product.price >= parseFloat(priceRange.min)) &&
-    //         (!priceRange.max || product.price <= parseFloat(priceRange.max));
+        return matchesSearch && notInCategory && product.is_active
+    })
 
-    //     // Exclude products already in this category
-    //     const notInCategory = product.store_category_id !== category?._id;
+    // Paginate filtered products
+    const totalPages = Math.ceil(filteredProducts.length / itemsPerPage)
+    const paginatedProducts = filteredProducts.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
 
-    //     return (
-    //         matchesSearch &&
-    //         matchesStatus &&
-    //         matchesCategory &&
-    //         matchesPrice &&
-    //         notInCategory
-    //     );
-    // }) || [];
-
-    console.log(productInfo?.products);
-
-
-    const handleProductToggle = (productId: string) => {
-        console.log(productId);
-
-        setSelectedProducts((prev) =>
-            prev.includes(productId)
-                ? prev.filter((id) => id !== productId)
-                : [...prev, productId]
-        );
-        console.log(selectedProducts);
-
-    };
-
-    const handleSelectAll = () => {
-        if (selectedProducts.length === filteredProducts.length) {
-            setSelectedProducts([]);
+    const handleSelectAll = (checked: boolean) => {
+        if (checked) {
+            setSelectedProducts(paginatedProducts.map((product) => product._id))
         } else {
-            setSelectedProducts(filteredProducts.map((p) => p._id));
+            setSelectedProducts([])
         }
-    };
+    }
 
-    const handleAssignProducts = async () => {
-        if (!category || selectedProducts.length === 0) return;
+    const handleSelectProduct = (productId: string, checked: boolean) => {
+        if (checked) {
+            setSelectedProducts((prev) => [...prev, productId])
+        } else {
+            setSelectedProducts((prev) => prev.filter((id) => id !== productId))
+        }
+    }
 
-        setIsSubmitting(true);
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault()
+
+        if (!category || selectedProducts.length === 0) {
+            toast.error("Please select at least one product")
+            return
+        }
+
+        setIsSubmitting(true)
+
         try {
-            // Assign each selected product to the category
-            // const promises = selectedProducts.map((productId) =>
-            //     assignProductsToCategory(productId, category._id)
-            // );
-            console.log(selectedProducts);
-            console.log("cat", category);
-            const id = category;
-
-            await assignProductsToCategory(selectedProducts, category as any)
-
-            // await Promise.all(promises);
-
+            await assignProductsToCategory(selectedProducts, category._id)
             toast.success(
-                `${selectedProducts.length} product(s) added to ${category.display_name}`
-            );
-
-            // Clear selection and close dialog
-            setSelectedProducts([]);
-            onProductsAdded?.();
-            onOpenChange(false);
-
-            // Refresh products
-            fetchProducts({ limit: 100 });
+                `${selectedProducts.length} product${selectedProducts.length > 1 ? "s" : ""} assigned to ${category.display_name}`,
+            )
+            onOpenChange(false)
         } catch (error: any) {
-            toast.error(error.message || "Failed to assign products");
+            console.error("Assign products error:", error)
+            toast.error(error.message || "Failed to assign products to category")
         } finally {
-            setIsSubmitting(false);
+            setIsSubmitting(false)
         }
-    };
+    }
 
-    const clearFilters = () => {
-        setSearchTerm("");
-        setFilterStatus("all");
-        setFilterCategory("unassigned");
-        setPriceRange({ min: "", max: "" });
-    };
+    const handleClose = () => {
+        if (!categoryLoading && !isSubmitting) {
+            onOpenChange(false)
+        }
+    }
 
-    const hasActiveFilters =
-        searchTerm ||
-        filterStatus !== "all" ||
-        filterCategory !== "unassigned" ||
-        priceRange.min ||
-        priceRange.max;
-
-    const ProductCard = ({
-        product,
-        isSelected,
-        onToggle,
-    }: {
-        product: iProduct;
-        isSelected: boolean;
-        onToggle: (productId: string) => void;
-    }) => (
-        <Card
-            className={`transition-all cursor-pointer hover:shadow-md ${isSelected ? "ring-2 ring-primary" : ""
-                }`}
-            onClick={() => onToggle(product._id)}
-        >
-            <CardContent className="p-4">
-                <div className="flex items-start gap-3">
-                    <Checkbox checked={isSelected} onChange={() => onToggle(product._id)} />
-
-                    <div className="flex-1 min-w-0">
-                        <div className="flex items-start gap-3">
-                            {product.images && product.images.length > 0 ? (
-                                <img
-                                    src={product.images[0] || "/placeholder.svg"}
-                                    alt={product.name}
-                                    className="w-16 h-16 rounded object-cover flex-shrink-0"
-                                />
-                            ) : (
-                                <div className="w-16 h-16 rounded bg-muted flex items-center justify-center flex-shrink-0">
-                                    <Package className="h-8 w-8 text-muted-foreground" />
-                                </div>
-                            )}
-
-                            <div className="flex-1 min-w-0">
-                                <h4 className="font-medium text-sm truncate mb-1">
-                                    {product.name}
-                                </h4>
-                                <p className="text-xs text-muted-foreground truncate mb-2">
-                                    {product.brand && `${product.brand} • `}
-                                    SKU: {product.sku || "N/A"}
-                                </p>
-                                <div className="flex items-center gap-2 flex-wrap">
-                                    <Badge variant="outline" className="text-xs">
-                                        <DollarSign className="h-3 w-3 mr-1" />
-                                        {product.price}
-                                    </Badge>
-                                    <Badge
-                                        variant={
-                                            product.stock?.quantity && product.stock.quantity > 0
-                                                ? "default"
-                                                : "destructive"
-                                        }
-                                        className="text-xs"
-                                    >
-                                        Stock: {product.stock?.quantity || 0}
-                                    </Badge>
-                                    {product.is_featured && (
-                                        <Badge variant="secondary" className="text-xs">
-                                            Featured
-                                        </Badge>
-                                    )}
-                                    {!product.is_active && (
-                                        <Badge variant="outline" className="text-xs">
-                                            Inactive
-                                        </Badge>
-                                    )}
-                                </div>
-                                {product.store_category_id && (
-                                    <div className="mt-2">
-                                        <Badge variant="outline" className="text-xs">
-                                            <Tag className="h-3 w-3 mr-1" />
-                                            {categories.find((c) => c._id === product.store_category_id)
-                                                ?.display_name || "Unknown Category"}
-                                        </Badge>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </CardContent>
-        </Card>
-    );
-
-    if (!category) return null;
+    const isFormDisabled = categoryLoading || isSubmitting || productsLoading
 
     return (
-        <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="max-w-6xl max-h-[90vh] overflow-hidden">
+        <Dialog open={open} onOpenChange={handleClose}>
+            <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-hidden flex flex-col">
                 <DialogHeader>
                     <DialogTitle className="flex items-center gap-2">
-                        <Plus className="h-5 w-5" />
-                        Add Products to {category.display_name}
+                        <Package className="h-5 w-5 text-primary" />
+                        Add Products to Category
                     </DialogTitle>
+                    <DialogDescription>
+                        {category && (
+                            <>
+                                Select products to add to <strong>{category.display_name}</strong> category.
+                            </>
+                        )}
+                    </DialogDescription>
                 </DialogHeader>
 
-                <div className="flex flex-col h-full">
+                <div className="flex-1 overflow-hidden flex flex-col space-y-4">
                     {/* Search and Filters */}
-                    <div className="space-y-4 pb-4">
-                        {/* Search */}
+                    <div className="space-y-4">
                         <div className="relative">
                             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
                             <Input
-                                placeholder="Search products by name, SKU, or brand..."
+                                placeholder="Search products..."
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
                                 className="pl-10"
+                                disabled={isFormDisabled}
                             />
                         </div>
 
-                        {/* Filters */}
-                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                            <Select value={filterStatus} onValueChange={setFilterStatus}>
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Filter by status" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="all">All Products</SelectItem>
-                                    <SelectItem value="active">Active Only</SelectItem>
-                                    <SelectItem value="inactive">Inactive Only</SelectItem>
-                                    <SelectItem value="featured">Featured Only</SelectItem>
-                                </SelectContent>
-                            </Select>
-
-                            <Select value={filterCategory} onValueChange={setFilterCategory}>
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Filter by category" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="all">All Categories</SelectItem>
-                                    <SelectItem value="unassigned">Unassigned</SelectItem>
-                                    <SelectItem value="assigned">Assigned</SelectItem>
-                                    {categories.map((cat) => (
-                                        <SelectItem key={cat._id} value={cat._id}>
-                                            {cat.display_name}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-
-                            <Input
-                                placeholder="Min price"
-                                type="number"
-                                value={priceRange.min}
-                                onChange={(e) =>
-                                    setPriceRange((prev) => ({ ...prev, min: e.target.value }))
-                                }
-                            />
-
-                            <Input
-                                placeholder="Max price"
-                                type="number"
-                                value={priceRange.max}
-                                onChange={(e) =>
-                                    setPriceRange((prev) => ({ ...prev, max: e.target.value }))
-                                }
-                            />
-                        </div>
-
-                        {/* Active Filters & Controls */}
+                        {/* Selection Summary */}
                         <div className="flex items-center justify-between">
                             <div className="flex items-center gap-2">
-                                {filteredProducts.length > 0 && (
-                                    <>
-                                        <Checkbox
-                                            checked={selectedProducts.length === filteredProducts.length}
-                                            onCheckedChange={handleSelectAll}
-                                        />
-                                        <span className="text-sm">
-                                            Select All ({filteredProducts.length})
-                                        </span>
-                                    </>
-                                )}
-                                {hasActiveFilters && (
-                                    <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={clearFilters}
-                                        className="h-8"
-                                    >
-                                        <X className="h-4 w-4 mr-1" />
-                                        Clear Filters
-                                    </Button>
-                                )}
+                                <Badge variant="secondary">{filteredProducts.length} products available</Badge>
+                                {selectedProducts.length > 0 && <Badge variant="default">{selectedProducts.length} selected</Badge>}
                             </div>
-                            <Badge variant="outline">
-                                {selectedProducts.length} selected
-                            </Badge>
+
+                            {selectedProducts.length > 0 && (
+                                <Button variant="outline" size="sm" onClick={() => setSelectedProducts([])} disabled={isFormDisabled}>
+                                    <X className="h-4 w-4 mr-1" />
+                                    Clear Selection
+                                </Button>
+                            )}
                         </div>
                     </div>
 
                     <Separator />
 
                     {/* Products List */}
-                    <ScrollArea className="flex-1 py-4">
-                        <div className="space-y-4">
-                            {loading && (
-                                <div className="text-center py-8">
-                                    <Loader2 className="mx-auto h-8 w-8 animate-spin text-muted-foreground mb-4" />
-                                    <p className="text-muted-foreground">Loading products...</p>
+                    <div className="flex-1 overflow-hidden">
+                        <ScrollArea className="h-[400px] pr-4">
+                            {productsLoading ? (
+                                <div className="space-y-4">
+                                    {Array.from({ length: 5 }).map((_, index) => (
+                                        <div key={index} className="flex items-center space-x-3 p-3 border rounded-lg">
+                                            <Skeleton className="h-4 w-4" />
+                                            <Skeleton className="h-12 w-12 rounded" />
+                                            <div className="flex-1 space-y-2">
+                                                <Skeleton className="h-4 w-48" />
+                                                <Skeleton className="h-3 w-24" />
+                                            </div>
+                                            <Skeleton className="h-4 w-16" />
+                                        </div>
+                                    ))}
                                 </div>
-                            )}
-
-                            {!loading && filteredProducts.length === 0 && (
+                            ) : filteredProducts.length === 0 ? (
                                 <div className="text-center py-8">
-                                    <Package className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-                                    <h3 className="text-lg font-medium mb-2">No products found</h3>
+                                    <Package className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
                                     <p className="text-muted-foreground">
-                                        {hasActiveFilters
-                                            ? "Try adjusting your filters"
-                                            : "No products available to add to this category"}
+                                        {searchTerm ? "No products found matching your search" : "No products available"}
                                     </p>
                                 </div>
-                            )}
-
-                            {!loading && filteredProducts.length > 0 && (
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    {filteredProducts.map((product) => (
-                                        <ProductCard
-                                            key={product._id}
-                                            product={product}
-                                            isSelected={selectedProducts.includes(product._id)}
-                                            onToggle={handleProductToggle}
+                            ) : (
+                                <div className="space-y-2">
+                                    {/* Select All */}
+                                    <div className="flex items-center space-x-3 p-3 bg-muted/50 rounded-lg">
+                                        <Checkbox
+                                            checked={
+                                                paginatedProducts.length > 0 &&
+                                                paginatedProducts.every((product) => selectedProducts.includes(product._id))
+                                            }
+                                            onCheckedChange={handleSelectAll}
+                                            disabled={isFormDisabled}
                                         />
+                                        <Label className="font-medium">Select all products on this page ({paginatedProducts.length})</Label>
+                                    </div>
+
+                                    {/* Product List */}
+                                    {paginatedProducts.map((product) => (
+                                        <div
+                                            key={product._id}
+                                            className="flex items-center space-x-3 p-3 border rounded-lg hover:bg-muted/50 transition-colors"
+                                        >
+                                            <Checkbox
+                                                checked={selectedProducts.includes(product._id)}
+                                                onCheckedChange={(checked) => handleSelectProduct(product._id, checked as boolean)}
+                                                disabled={isFormDisabled}
+                                            />
+
+                                            <div className="h-12 w-12 rounded bg-muted flex items-center justify-center overflow-hidden">
+                                                {product.images && product.images[0] ? (
+                                                    <img
+                                                        src={product.images[0] || "/placeholder.svg"}
+                                                        alt={product.name}
+                                                        className="h-12 w-12 object-cover"
+                                                    />
+                                                ) : (
+                                                    <Package className="h-6 w-6 text-muted-foreground" />
+                                                )}
+                                            </div>
+
+                                            <div className="flex-1 min-w-0">
+                                                <p className="font-medium truncate">{product.name}</p>
+                                                <div className="flex items-center gap-2 mt-1">
+                                                    <p className="text-sm text-muted-foreground">${product.price.toFixed(2)}</p>
+                                                    {product.store_category_id && (
+                                                        <Badge variant="outline" className="text-xs">
+                                                            <Tag className="h-3 w-3 mr-1" />
+                                                            Already categorized
+                                                        </Badge>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </div>
                                     ))}
                                 </div>
                             )}
-                        </div>
-                    </ScrollArea>
-
-                    {/* Footer Actions */}
-                    <div className="flex items-center justify-between pt-4 border-t">
-                        <div className="text-sm text-muted-foreground">
-                            {selectedProducts.length > 0 && (
-                                <span>
-                                    {selectedProducts.length} product(s) selected for assignment
-                                </span>
-                            )}
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <Button
-                                variant="outline"
-                                onClick={() => onOpenChange(false)}
-                                disabled={isSubmitting}
-                            >
-                                Cancel
-                            </Button>
-                            <Button
-                                onClick={handleAssignProducts}
-                                disabled={selectedProducts.length === 0 || isSubmitting}
-                                className="flex items-center gap-2"
-                            >
-                                {isSubmitting && <Loader2 className="h-4 w-4 animate-spin" />}
-                                <Plus className="h-4 w-4" />
-                                Add {selectedProducts.length > 0 ? `${selectedProducts.length} ` : ""}
-                                Product{selectedProducts.length !== 1 ? "s" : ""}
-                            </Button>
-                        </div>
+                        </ScrollArea>
                     </div>
+
+                    {/* Pagination */}
+                    {totalPages > 1 && (
+                        <div className="flex items-center justify-between pt-4 border-t">
+                            <p className="text-sm text-muted-foreground">
+                                Page {currentPage} of {totalPages}
+                            </p>
+                            <div className="flex items-center space-x-2">
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+                                    disabled={currentPage === 1 || isFormDisabled}
+                                >
+                                    Previous
+                                </Button>
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
+                                    disabled={currentPage === totalPages || isFormDisabled}
+                                >
+                                    Next
+                                </Button>
+                            </div>
+                        </div>
+                    )}
                 </div>
+
+                <DialogFooter className="gap-2">
+                    <Button type="button" variant="outline" onClick={handleClose} disabled={isFormDisabled}>
+                        Cancel
+                    </Button>
+                    <Button onClick={handleSubmit} disabled={isFormDisabled || selectedProducts.length === 0}>
+                        {isSubmitting ? (
+                            <>
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                Assigning...
+                            </>
+                        ) : (
+                            <>
+                                <Save className="mr-2 h-4 w-4" />
+                                Add {selectedProducts.length} Product{selectedProducts.length !== 1 ? "s" : ""}
+                            </>
+                        )}
+                    </Button>
+                </DialogFooter>
             </DialogContent>
         </Dialog>
-    );
+    )
 }

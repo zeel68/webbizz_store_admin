@@ -43,7 +43,7 @@ type SortType = "name-asc" | "name-desc" | "created-asc" | "created-desc";
 
 export default function Page() {
   const { user } = useUserStore();
-  const { categories, fetchCategories, loading } = useCategoryStore();
+  const { categories, fetchCategories, deleteCategory, loading } = useCategoryStore();
 
   // State management
   const [searchTerm, setSearchTerm] = useState<string>("");
@@ -181,6 +181,7 @@ export default function Page() {
     setSelectedCategory(null);
     setAssignProductDialogOpen(false)
   };
+
 
 
 

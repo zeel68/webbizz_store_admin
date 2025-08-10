@@ -21,7 +21,7 @@ interface ApiResponse<T> {
 
 class ApiClient {
   mode = process.env.NODE_ENV || "production";
-  private baseURL: string = "http://localhost:5050/api";
+  private baseURL: string = "http://192.168.29.199:5050/api";
   private axiosInstance: AxiosInstance;
   constructor(config?: AxiosRequestConfig) {
     this.axiosInstance = axios.create({

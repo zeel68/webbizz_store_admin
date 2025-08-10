@@ -4,78 +4,167 @@ import { useState } from "react"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuLabel,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import { Skeleton } from "@/components/ui/skeleton"
-import { MoreHorizontal, Edit, Trash2, Eye, Mail, Phone } from "lucide-react"
-
-import { formatDistanceToNow } from "date-fns"
-import { useCustomerStore } from "@/store/customerStore"
+import { MoreHorizontal, Eye, Edit, Trash2, Mail, Phone, Calendar, MapPin, ShoppingBag } from "lucide-react"
+import { formatRelativeTime, getInitials, getStatusColor } from "@/lib/utils"
 
 interface Customer {
     _id: string
     name: string
     email: string
     phone?: string
-    phone_number?: string
-    address?: string
+    created_at: string
+    status: "active" | "inactive"
     total_orders?: number
     total_spent?: number
-    status: "active" | "inactive"
-    created_at: string
-    updated_at: string
+    last_order_date?: string
+    address?: {
+        city?: string
+        country?: string
+    }
+    profile_image?: string
 }
 
 interface CustomersTableProps {
     customers: Customer[]
     isLoading: boolean
+    onView?: (customer: Customer) => void
+    onEdit?: (customer: Customer) => void
+    onDelete?: (customer: Customer) => void
 }
 
-export function CustomersTable({ customers, isLoading }: CustomersTableProps) {
-    const { updateCustomer, deleteCustomer } = useCustomerStore()
-    const [deletingId, setDeletingId] = useState<string | null>(null)
+export function CustomersTable({ customers, isLoading, onView, onEdit, onDelete }: CustomersTableProps) {
+    const [selectedCustomers, setSelectedCustomers] = useState<string[]>([])
 
-    const handleStatusChange = async (customerId: string, newStatus: "active" | "inactive") => {
-        try {
-            await updateCustomer(customerId, { status: newStatus })
-        } catch (error) {
-            console.error("Failed to update customer status:", error)
+    const handleSelectAll = (checked: boolean) => {
+        if (checked) {
+            setSelectedCustomers(customers.map((customer) => customer._id))
+        } else {
+            setSelectedCustomers([])
         }
     }
 
-    const handleDelete = async (customerId: string) => {
-        if (confirm("Are you sure you want to delete this customer?")) {
-            setDeletingId(customerId)
-            try {
-                await deleteCustomer(customerId)
-            } catch (error) {
-                console.error("Failed to delete customer:", error)
-            } finally {
-                setDeletingId(null)
-            }
+    const handleSelectCustomer = (customerId: string, checked: boolean) => {
+        if (checked) {
+            setSelectedCustomers((prev) => [...prev, customerId])
+        } else {
+            setSelectedCustomers((prev) => prev.filter((id) => id !== customerId))
         }
+    }
+
+    const getStatusBadge = (status: string) => {
+        const colorClass = getStatusColor(status)
+        return (
+            <Badge variant="secondary" className={`${colorClass} border-0 font-medium`}>
+                {status}
+            </Badge>
+        )
     }
 
     if (isLoading) {
         return (
-            <div className="space-y-3">
-                {Array.from({ length: 5 }).map((_, i) => (
-                    <div key={i} className="flex items-center space-x-4 p-4 border rounded-lg">
-                        <Skeleton className="h-10 w-10 rounded-full" />
-                        <div className="space-y-2 flex-1">
-                            <Skeleton className="h-4 w-48" />
-                            <Skeleton className="h-3 w-32" />
-                        </div>
-                        <Skeleton className="h-6 w-16" />
-                        <Skeleton className="h-8 w-8" />
-                    </div>
-                ))}
+            <div className="rounded-md border">
+                <Table>
+                    <TableHeader>
+                        <TableRow>
+                            <TableHead className="w-12">
+                                <Skeleton className="h-4 w-4" />
+                            </TableHead>
+                            <TableHead>Customer</TableHead>
+                            <TableHead>Contact</TableHead>
+                            <TableHead>Status</TableHead>
+                            <TableHead>Orders</TableHead>
+                            <TableHead>Total Spent</TableHead>
+                            <TableHead>Last Order</TableHead>
+                            <TableHead>Joined</TableHead>
+                            <TableHead className="w-12"></TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {Array.from({ length: 5 }).map((_, index) => (
+                            <TableRow key={index}>
+                                <TableCell>
+                                    <Skeleton className="h-4 w-4" />
+                                </TableCell>
+                                <TableCell>
+                                    <div className="flex items-center space-x-3">
+                                        <Skeleton className="h-10 w-10 rounded-full" />
+                                        <div className="space-y-1">
+                                            <Skeleton className="h-4 w-32" />
+                                            <Skeleton className="h-3 w-24" />
+                                        </div>
+                                    </div>
+                                </TableCell>
+                                <TableCell>
+                                    <div className="space-y-1">
+                                        <Skeleton className="h-4 w-40" />
+                                        <Skeleton className="h-3 w-32" />
+                                    </div>
+                                </TableCell>
+                                <TableCell>
+                                    <Skeleton className="h-6 w-16" />
+                                </TableCell>
+                                <TableCell>
+                                    <Skeleton className="h-4 w-8" />
+                                </TableCell>
+                                <TableCell>
+                                    <Skeleton className="h-4 w-20" />
+                                </TableCell>
+                                <TableCell>
+                                    <Skeleton className="h-4 w-24" />
+                                </TableCell>
+                                <TableCell>
+                                    <Skeleton className="h-4 w-20" />
+                                </TableCell>
+                                <TableCell>
+                                    <Skeleton className="h-8 w-8" />
+                                </TableCell>
+                            </TableRow>
+                        ))}
+                    </TableBody>
+                </Table>
             </div>
         )
     }
 
     if (customers.length === 0) {
-        return <div className="text-center py-8 text-muted-foreground">No customers found</div>
+        return (
+            <div className="rounded-md border">
+                <Table>
+                    <TableHeader>
+                        <TableRow>
+                            <TableHead>Customer</TableHead>
+                            <TableHead>Contact</TableHead>
+                            <TableHead>Status</TableHead>
+                            <TableHead>Orders</TableHead>
+                            <TableHead>Total Spent</TableHead>
+                            <TableHead>Last Order</TableHead>
+                            <TableHead>Joined</TableHead>
+                            <TableHead className="w-12"></TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        <TableRow>
+                            <TableCell colSpan={8} className="text-center py-8">
+                                <div className="flex flex-col items-center space-y-2">
+                                    <ShoppingBag className="h-8 w-8 text-muted-foreground" />
+                                    <p className="text-muted-foreground">No customers found</p>
+                                </div>
+                            </TableCell>
+                        </TableRow>
+                    </TableBody>
+                </Table>
+            </div>
+        )
     }
 
     return (
@@ -83,94 +172,154 @@ export function CustomersTable({ customers, isLoading }: CustomersTableProps) {
             <Table>
                 <TableHeader>
                     <TableRow>
+                        <TableHead className="w-12">
+                            <input
+                                type="checkbox"
+                                checked={selectedCustomers.length === customers.length}
+                                onChange={(e) => handleSelectAll(e.target.checked)}
+                                className="rounded border-gray-300"
+                            />
+                        </TableHead>
                         <TableHead>Customer</TableHead>
                         <TableHead>Contact</TableHead>
+                        <TableHead>Status</TableHead>
                         <TableHead>Orders</TableHead>
                         <TableHead>Total Spent</TableHead>
-                        <TableHead>Status</TableHead>
+                        <TableHead>Last Order</TableHead>
                         <TableHead>Joined</TableHead>
-                        <TableHead className="w-[50px]"></TableHead>
+                        <TableHead className="w-12"></TableHead>
                     </TableRow>
                 </TableHeader>
                 <TableBody>
                     {customers.map((customer) => (
-                        <TableRow key={customer._id}>
+                        <TableRow key={customer._id} className="hover:bg-muted/50">
+                            <TableCell>
+                                <input
+                                    type="checkbox"
+                                    checked={selectedCustomers.includes(customer._id)}
+                                    onChange={(e) => handleSelectCustomer(customer._id, e.target.checked)}
+                                    className="rounded border-gray-300"
+                                />
+                            </TableCell>
+
                             <TableCell>
                                 <div className="flex items-center space-x-3">
-                                    <Avatar className="h-8 w-8">
-                                        <AvatarImage src={`https://avatar.vercel.sh/${customer.email}`} />
-                                        <AvatarFallback>
-                                            {customer.name
-                                                .split(" ")
-                                                .map((n) => n[0])
-                                                .join("")
-                                                .toUpperCase()}
+                                    <Avatar className="h-10 w-10">
+                                        <AvatarImage src={customer.profile_image || "/placeholder.svg"} alt={customer.name} />
+                                        <AvatarFallback className="bg-primary/10 text-primary font-medium">
+                                            {getInitials(customer.name)}
                                         </AvatarFallback>
                                     </Avatar>
-                                    <div>
-                                        <div className="font-medium">{customer.name}</div>
-                                        <div className="text-sm text-muted-foreground">{customer.email}</div>
+                                    <div className="space-y-1">
+                                        <p className="font-medium leading-none">{customer.name}</p>
+                                        {customer.address?.city && (
+                                            <div className="flex items-center text-xs text-muted-foreground">
+                                                <MapPin className="h-3 w-3 mr-1" />
+                                                {customer.address.city}
+                                                {customer.address.country && `, ${customer.address.country}`}
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                             </TableCell>
+
                             <TableCell>
                                 <div className="space-y-1">
                                     <div className="flex items-center text-sm">
-                                        <Mail className="h-3 w-3 mr-1" />
-                                        {customer.email}
+                                        <Mail className="h-3 w-3 mr-2 text-muted-foreground" />
+                                        <span className="truncate max-w-[200px]" title={customer.email}>
+                                            {customer.email}
+                                        </span>
                                     </div>
-                                    {(customer.phone || customer.phone_number) && (
+                                    {customer.phone && (
                                         <div className="flex items-center text-sm text-muted-foreground">
-                                            <Phone className="h-3 w-3 mr-1" />
-                                            {customer.phone || customer.phone_number}
+                                            <Phone className="h-3 w-3 mr-2" />
+                                            <span>{customer.phone}</span>
                                         </div>
                                     )}
                                 </div>
                             </TableCell>
+
+                            <TableCell>{getStatusBadge(customer.status)}</TableCell>
+
                             <TableCell>
-                                <div className="font-medium">{customer.total_orders || 0}</div>
-                            </TableCell>
-                            <TableCell>
-                                <div className="font-medium">${(customer.total_spent || 0).toFixed(2)}</div>
-                            </TableCell>
-                            <TableCell>
-                                <Badge
-                                    variant={customer.status === "active" ? "default" : "secondary"}
-                                    className="cursor-pointer"
-                                    onClick={() => handleStatusChange(customer._id, customer.status === "active" ? "inactive" : "active")}
-                                >
-                                    {customer.status}
-                                </Badge>
-                            </TableCell>
-                            <TableCell>
-                                <div className="text-sm text-muted-foreground">
-                                    {formatDistanceToNow(new Date(customer.created_at), { addSuffix: true })}
+                                <div className="flex items-center">
+                                    <ShoppingBag className="h-4 w-4 mr-2 text-muted-foreground" />
+                                    <span className="font-medium">{customer.total_orders || 0}</span>
                                 </div>
                             </TableCell>
+
+                            <TableCell>
+                                <span className="font-medium">${(customer.total_spent || 0).toFixed(2)}</span>
+                            </TableCell>
+
+                            <TableCell>
+                                {customer.last_order_date ? (
+                                    <div className="flex items-center text-sm">
+                                        <Calendar className="h-3 w-3 mr-2 text-muted-foreground" />
+                                        <span>{formatRelativeTime(customer.last_order_date)}</span>
+                                    </div>
+                                ) : (
+                                    <span className="text-muted-foreground text-sm">No orders</span>
+                                )}
+                            </TableCell>
+
+                            <TableCell>
+                                <div className="flex items-center text-sm text-muted-foreground">
+                                    <Calendar className="h-3 w-3 mr-2" />
+                                    <span>{formatRelativeTime(customer.created_at)}</span>
+                                </div>
+                            </TableCell>
+
                             <TableCell>
                                 <DropdownMenu>
                                     <DropdownMenuTrigger asChild>
-                                        <Button variant="ghost" size="sm">
+                                        <Button variant="ghost" className="h-8 w-8 p-0">
+                                            <span className="sr-only">Open menu</span>
                                             <MoreHorizontal className="h-4 w-4" />
                                         </Button>
                                     </DropdownMenuTrigger>
-                                    <DropdownMenuContent align="end">
-                                        <DropdownMenuItem>
-                                            <Eye className="mr-2 h-4 w-4" />
-                                            View Details
+                                    <DropdownMenuContent align="end" className="w-48">
+                                        <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                                        <DropdownMenuSeparator />
+
+                                        {onView && (
+                                            <DropdownMenuItem onClick={() => onView(customer)}>
+                                                <Eye className="mr-2 h-4 w-4" />
+                                                View Details
+                                            </DropdownMenuItem>
+                                        )}
+
+                                        {onEdit && (
+                                            <DropdownMenuItem onClick={() => onEdit(customer)}>
+                                                <Edit className="mr-2 h-4 w-4" />
+                                                Edit Customer
+                                            </DropdownMenuItem>
+                                        )}
+
+                                        <DropdownMenuItem onClick={() => window.open(`mailto:${customer.email}`, "_blank")}>
+                                            <Mail className="mr-2 h-4 w-4" />
+                                            Send Email
                                         </DropdownMenuItem>
-                                        <DropdownMenuItem>
-                                            <Edit className="mr-2 h-4 w-4" />
-                                            Edit Customer
-                                        </DropdownMenuItem>
-                                        <DropdownMenuItem
-                                            className="text-destructive"
-                                            onClick={() => handleDelete(customer._id)}
-                                            disabled={deletingId === customer._id}
-                                        >
-                                            <Trash2 className="mr-2 h-4 w-4" />
-                                            {deletingId === customer._id ? "Deleting..." : "Delete"}
-                                        </DropdownMenuItem>
+
+                                        {customer.phone && (
+                                            <DropdownMenuItem onClick={() => window.open(`tel:${customer.phone}`, "_blank")}>
+                                                <Phone className="mr-2 h-4 w-4" />
+                                                Call Customer
+                                            </DropdownMenuItem>
+                                        )}
+
+                                        <DropdownMenuSeparator />
+
+                                        {onDelete && (
+                                            <DropdownMenuItem
+                                                onClick={() => onDelete(customer)}
+                                                className="text-destructive focus:text-destructive"
+                                            >
+                                                <Trash2 className="mr-2 h-4 w-4" />
+                                                Delete Customer
+                                            </DropdownMenuItem>
+                                        )}
                                     </DropdownMenuContent>
                                 </DropdownMenu>
                             </TableCell>
@@ -178,6 +327,28 @@ export function CustomersTable({ customers, isLoading }: CustomersTableProps) {
                     ))}
                 </TableBody>
             </Table>
+
+            {/* Bulk Actions */}
+            {selectedCustomers.length > 0 && (
+                <div className="border-t bg-muted/50 px-4 py-3">
+                    <div className="flex items-center justify-between">
+                        <p className="text-sm text-muted-foreground">
+                            {selectedCustomers.length} customer{selectedCustomers.length > 1 ? "s" : ""} selected
+                        </p>
+                        <div className="flex items-center space-x-2">
+                            <Button variant="outline" size="sm">
+                                Export Selected
+                            </Button>
+                            <Button variant="outline" size="sm">
+                                Send Email
+                            </Button>
+                            <Button variant="destructive" size="sm">
+                                Delete Selected
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     )
 }

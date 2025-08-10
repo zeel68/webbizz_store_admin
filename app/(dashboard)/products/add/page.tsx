@@ -148,16 +148,16 @@ export default function AddProductPage() {
     const form = useForm<iProductFormData>({
         resolver: zodResolver(productSchema as any),
         defaultValues: {
-            name: "",
-            description: "",
-            price: 0,
-            compare_price: undefined,
-            cost_price: undefined,
+            name: "qw",
+            description: "qwqw",
+            price: 1,
+            compare_price: 2,
+            cost_price: 1,
             store_category_id: "",
             brand: "",
             sku: "",
             stock: {
-                quantity: 0,
+                quantity: 1,
                 track_inventory: true,
                 low_stock_threshold: 10,
                 allow_backorder: false,
@@ -171,7 +171,7 @@ export default function AddProductPage() {
                 keywords: [],
             },
             shipping: {
-                weight: undefined,
+                weight: 1,
                 dimensions: undefined,
             },
             variants: [],
@@ -358,6 +358,7 @@ export default function AddProductPage() {
                     keywords: seoKeywords,
                 },
             }
+            console.log(productData);
 
             await createProduct(productData as any)
             toast.success("Product created successfully")

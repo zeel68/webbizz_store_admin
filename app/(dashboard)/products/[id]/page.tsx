@@ -58,6 +58,7 @@ interface iProductFormData {
     is_featured: boolean
     visibility: "public" | "private" | "hidden"
     images?: string[]
+    category: string
 }
 
 interface iProductVariant {
@@ -361,7 +362,7 @@ export default function EditProductPage() {
             const primaryUrl = imageUrls[primaryIndex] || imageUrls[0]
             const otherUrls = imageUrls.filter((_, i) => i !== primaryIndex)
             const finalImages = [primaryUrl, ...otherUrls]
-
+            data.category = data.store_category_id
             const productData: iProductFormData = {
                 ...data,
                 tags,
@@ -374,6 +375,7 @@ export default function EditProductPage() {
                     keywords: seoKeywords,
                 },
             }
+            console.log(productData);
 
             await updateProduct(productId, productData as any)
             toast.success("Product updated successfully")

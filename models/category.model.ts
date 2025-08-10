@@ -40,8 +40,8 @@ interface iStoreCategory {
     sort_order: number;
     is_active: boolean;
     config?: iStoreCategoryConfig;
-    created_at: string;
-    updated_at: string;
+    createdAt: string;
+    updatedAt: string;
     category_details?: iCategory;
     store_details?: iStore;
     products_count?: number;

@@ -1,161 +1,204 @@
-"use client";
+"use client"
 
-import { useState } from "react";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import { useState } from "react"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Textarea } from "@/components/ui/textarea";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
+} from "@/components/ui/dropdown-menu"
+import { Skeleton } from "@/components/ui/skeleton"
 import {
   MoreHorizontal,
-  Star,
-  Reply,
-  Check,
-  EyeOff,
-  Trash2,
   Eye,
-} from "lucide-react";
-import { formatDistanceToNow } from "date-fns";
-import { useReviewStore } from "@/store/reviewStore";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+  Edit,
+  Trash2,
+  Star,
+  Calendar,
+  Package,
+  CheckCircle,
+  XCircle,
+  Clock,
+  MessageSquare,
+} from "lucide-react"
+import { formatRelativeTime, getInitials, getStatusColor, truncateText } from "@/lib/utils"
 
 interface Review {
-  _id: string;
-  user: string;
-  rating: number;
-  comment: string;
-  date: string;
-  status?: string;
-  product_name?: string;
-  customer_name?: string;
-  customer_avatar?: string;
+  _id: string
+  user_id: {
+    name: string
+    email: string
+    profile_image?: string
+  }
+  product_id: {
+    name: string
+    images?: string[]
+  }
+  rating: number
+  comment: string
+  status: "pending" | "approved" | "rejected"
+  helpful_count: number
+  verified_purchase?: boolean
+  created_at: string
 }
 
 interface ReviewsTableProps {
-  reviews: Review[];
-  isLoading: boolean;
+  reviews: Review[]
+  isLoading: boolean
+  onView?: (review: Review) => void
+  onEdit?: (review: Review) => void
+  onDelete?: (review: Review) => void
+  onApprove?: (reviewId: string) => void
+  onReject?: (reviewId: string) => void
 }
 
-export function ReviewsTable({ reviews, isLoading }: ReviewsTableProps) {
-  const { updateReviewStatus, replyToReview, deleteReview } = useReviewStore();
-  const [replyingTo, setReplyingTo] = useState<string | null>(null);
-  const [replyText, setReplyText] = useState("");
-  const [deletingId, setDeletingId] = useState<string | null>(null);
-  const [updatingId, setUpdatingId] = useState<string | null>(null);
+export function ReviewsTable({ reviews, isLoading, onView, onEdit, onDelete, onApprove, onReject }: ReviewsTableProps) {
+  const [selectedReviews, setSelectedReviews] = useState<string[]>([])
 
-  const handleStatusChange = async (reviewId: string, status: string) => {
-    setUpdatingId(reviewId);
-    try {
-      await updateReviewStatus(reviewId, status);
-    } catch (error) {
-      console.error("Failed to update review status:", error);
-    } finally {
-      setUpdatingId(null);
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      setSelectedReviews(reviews.map((review) => review._id))
+    } else {
+      setSelectedReviews([])
     }
-  };
+  }
 
-  const handleReply = async (reviewId: string) => {
-    if (!replyText.trim()) return;
-
-    try {
-      await replyToReview(reviewId, replyText);
-      setReplyingTo(null);
-      setReplyText("");
-    } catch (error) {
-      console.error("Failed to reply to review:", error);
+  const handleSelectReview = (reviewId: string, checked: boolean) => {
+    if (checked) {
+      setSelectedReviews((prev) => [...prev, reviewId])
+    } else {
+      setSelectedReviews((prev) => prev.filter((id) => id !== reviewId))
     }
-  };
+  }
 
-  const handleDelete = async (reviewId: string) => {
-    if (confirm("Are you sure you want to delete this review?")) {
-      setDeletingId(reviewId);
-      try {
-        await deleteReview(reviewId);
-      } catch (error) {
-        console.error("Failed to delete review:", error);
-      } finally {
-        setDeletingId(null);
-      }
+  const getStatusBadge = (status: string) => {
+    const colorClass = getStatusColor(status)
+    const icons = {
+      pending: Clock,
+      approved: CheckCircle,
+      rejected: XCircle,
     }
-  };
+
+    const Icon = icons[status as keyof typeof icons] || Clock
+
+    return (
+      <Badge variant="secondary" className={`${colorClass} border-0 font-medium flex items-center gap-1`}>
+        <Icon className="h-3 w-3" />
+        {status}
+      </Badge>
+    )
+  }
 
   const renderStars = (rating: number) => {
     return (
-      <div className="flex items-center">
+      <div className="flex items-center gap-1">
         {[1, 2, 3, 4, 5].map((star) => (
-          <Star
-            key={star}
-            className={`h-4 w-4 ${star <= rating ? "text-yellow-400 fill-current" : "text-gray-300"
-              }`}
-          />
+          <Star key={star} className={`h-4 w-4 ${star <= rating ? "text-yellow-400 fill-current" : "text-gray-300"}`} />
         ))}
+        <span className="ml-1 text-sm font-medium">{rating}</span>
       </div>
-    );
-  };
-
-  // Get badge color based on status
-  const getStatusColor = (status: string = "pending") => {
-    switch (status) {
-      case "published":
-        return "bg-green-100 text-green-800 dark:bg-green-800/30 dark:text-green-400";
-      case "pending":
-        return "bg-yellow-100 text-yellow-800 dark:bg-yellow-800/30 dark:text-yellow-400";
-      case "hidden":
-        return "bg-red-100 text-red-800 dark:bg-red-800/30 dark:text-red-400";
-      default:
-        return "bg-gray-100 text-gray-800 dark:bg-gray-800/30 dark:text-gray-400";
-    }
-  };
+    )
+  }
 
   if (isLoading) {
     return (
-      <div className="space-y-3">
-        {Array.from({ length: 5 }).map((_, i) => (
-          <div
-            key={i}
-            className="flex items-center space-x-4 p-4 border rounded-lg"
-          >
-            <Skeleton className="h-10 w-10 rounded-full" />
-            <div className="space-y-2 flex-1">
-              <Skeleton className="h-4 w-48" />
-              <Skeleton className="h-3 w-32" />
-              <Skeleton className="h-3 w-64" />
-            </div>
-            <Skeleton className="h-6 w-16" />
-            <Skeleton className="h-8 w-8" />
-          </div>
-        ))}
+      <div className="rounded-md border">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="w-12">
+                <Skeleton className="h-4 w-4" />
+              </TableHead>
+              <TableHead>Review</TableHead>
+              <TableHead>Product</TableHead>
+              <TableHead>Customer</TableHead>
+              <TableHead>Rating</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Date</TableHead>
+              <TableHead className="w-12"></TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {Array.from({ length: 5 }).map((_, index) => (
+              <TableRow key={index}>
+                <TableCell>
+                  <Skeleton className="h-4 w-4" />
+                </TableCell>
+                <TableCell>
+                  <div className="space-y-2">
+                    <Skeleton className="h-4 w-full" />
+                    <Skeleton className="h-4 w-3/4" />
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <div className="flex items-center space-x-3">
+                    <Skeleton className="h-10 w-10 rounded" />
+                    <Skeleton className="h-4 w-24" />
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <div className="flex items-center space-x-3">
+                    <Skeleton className="h-8 w-8 rounded-full" />
+                    <div className="space-y-1">
+                      <Skeleton className="h-4 w-24" />
+                      <Skeleton className="h-3 w-20" />
+                    </div>
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <Skeleton className="h-4 w-20" />
+                </TableCell>
+                <TableCell>
+                  <Skeleton className="h-6 w-16" />
+                </TableCell>
+                <TableCell>
+                  <Skeleton className="h-4 w-20" />
+                </TableCell>
+                <TableCell>
+                  <Skeleton className="h-8 w-8" />
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
       </div>
-    );
+    )
   }
 
   if (reviews.length === 0) {
     return (
-      <div className="text-center py-8 text-muted-foreground">
-        No reviews found
+      <div className="rounded-md border">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Review</TableHead>
+              <TableHead>Product</TableHead>
+              <TableHead>Customer</TableHead>
+              <TableHead>Rating</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Date</TableHead>
+              <TableHead className="w-12"></TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            <TableRow>
+              <TableCell colSpan={7} className="text-center py-8">
+                <div className="flex flex-col items-center space-y-2">
+                  <MessageSquare className="h-8 w-8 text-muted-foreground" />
+                  <p className="text-muted-foreground">No reviews found</p>
+                </div>
+              </TableCell>
+            </TableRow>
+          </TableBody>
+        </Table>
       </div>
-    );
+    )
   }
 
   return (
@@ -163,202 +206,195 @@ export function ReviewsTable({ reviews, isLoading }: ReviewsTableProps) {
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Customer</TableHead>
-            <TableHead>Product</TableHead>
-            <TableHead>Rating</TableHead>
+            <TableHead className="w-12">
+              <input
+                type="checkbox"
+                checked={selectedReviews.length === reviews.length}
+                onChange={(e) => handleSelectAll(e.target.checked)}
+                className="rounded border-gray-300"
+              />
+            </TableHead>
             <TableHead>Review</TableHead>
+            <TableHead>Product</TableHead>
+            <TableHead>Customer</TableHead>
+            <TableHead>Rating</TableHead>
             <TableHead>Status</TableHead>
-            <TableHead className="w-[140px]">Date</TableHead>
-            <TableHead className="w-[180px] text-right">Actions</TableHead>
+            <TableHead>Date</TableHead>
+            <TableHead className="w-12"></TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {reviews.map((review) => (
-            <TableRow key={review._id}>
+            <TableRow key={review._id} className="hover:bg-muted/50">
               <TableCell>
-                <div className="flex items-center space-x-3">
-                  <Avatar className="h-8 w-8">
-                    <AvatarImage
-                      src={
-                        review.customer_avatar ||
-                        `https://avatar.vercel.sh/${review.user}`
-                      }
-                    />
-                    <AvatarFallback>
-                      {(review.customer_name || review.user)
-                        .split(" ")
-                        .map((n) => n[0])
-                        .join("")
-                        .toUpperCase()}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div>
-                    <div className="font-medium">
-                      {review.customer_name || review.user}
-                    </div>
+                <input
+                  type="checkbox"
+                  checked={selectedReviews.includes(review._id)}
+                  onChange={(e) => handleSelectReview(review._id, e.target.checked)}
+                  className="rounded border-gray-300"
+                />
+              </TableCell>
+
+              <TableCell className="max-w-xs">
+                <div className="space-y-1">
+                  <p className="text-sm leading-relaxed">{truncateText(review.comment, 100)}</p>
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    {review.verified_purchase && (
+                      <Badge variant="outline" className="text-xs px-1 py-0">
+                        <CheckCircle className="h-3 w-3 mr-1" />
+                        Verified
+                      </Badge>
+                    )}
+                    {review.helpful_count && review.helpful_count > 0 && <span>{review.helpful_count} helpful</span>}
                   </div>
                 </div>
               </TableCell>
+
               <TableCell>
-                <div className="font-medium">
-                  {review.product_name || "Product"}
+                <div className="flex items-center space-x-3">
+                  <div className="h-10 w-10 rounded bg-muted flex items-center justify-center overflow-hidden">
+                    {review.product_id.images && review.product_id.images[0] ? (
+                      <img
+                        src={review.product_id.images[0] || "/placeholder.svg"}
+                        alt={review.product_id.name}
+                        className="h-10 w-10 object-cover"
+                      />
+                    ) : (
+                      <Package className="h-5 w-5 text-muted-foreground" />
+                    )}
+                  </div>
+                  <div className="space-y-1">
+                    <p className="font-medium text-sm leading-none">{truncateText(review.product_id.name, 30)}</p>
+                  </div>
                 </div>
               </TableCell>
+
+              <TableCell>
+                <div className="flex items-center space-x-3">
+                  <Avatar className="h-8 w-8">
+                    <AvatarImage src={review.user_id.profile_image || "/placeholder.svg"} alt={review.user_id.name} />
+                    <AvatarFallback className="bg-primary/10 text-primary font-medium text-xs">
+                      {getInitials(review.user_id.name)}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="space-y-1">
+                    <p className="font-medium leading-none text-sm">{review.user_id.name}</p>
+                    <p className="text-xs text-muted-foreground truncate max-w-[120px]">{review.user_id.email}</p>
+                  </div>
+                </div>
+              </TableCell>
+
               <TableCell>{renderStars(review.rating)}</TableCell>
+
+              <TableCell>{getStatusBadge(review.status)}</TableCell>
+
               <TableCell>
-                <div className="max-w-xs">
-                  <p className="text-sm line-clamp-2">{review.comment}</p>
+                <div className="flex items-center text-sm text-muted-foreground">
+                  <Calendar className="h-3 w-3 mr-2" />
+                  <span>{formatRelativeTime(review.created_at)}</span>
                 </div>
               </TableCell>
-              <TableCell>
-                <div className={`${getStatusColor(review.status)} rounded-full px-3 py-1 text-xs font-medium max-w-20`}>
-                  {review.status === "published" && "Approved"}
-                  {review.status === "pending" && "Pending"}
-                  {review.status === "hidden" && "Hidden"}
-                  {!review.status && "Published"}
-                </div>
-              </TableCell>
-              <TableCell>
-                <div className="text-sm text-muted-foreground">
-                  {/* {formatDistanceToNow(new Date(review.date), { addSuffix: true })} */}
-                  {review.date}
-                </div>
-              </TableCell>
-              <TableCell>
-                <div className="flex justify-end gap-2">
-                  <TooltipProvider>
-                    {/* APPROVE BUTTON */}
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button
-                          variant="outline"
-                          size="icon"
-                          className="h-8 w-8"
-                          onClick={() => handleStatusChange(review._id, "published")}
-                          disabled={updatingId === review._id || review.status === "published"}
-                        >
-                          {updatingId === review._id ? (
-                            <span className="h-4 w-4 rounded-full border-2 border-blue-500 border-t-transparent animate-spin" />
-                          ) : (
-                            <Check className="h-4 w-4" />
-                          )}
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>Approve Review</TooltipContent>
-                    </Tooltip>
 
-                    {/* HIDE BUTTON */}
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button
-                          variant="outline"
-                          size="icon"
-                          className="h-8 w-8"
-                          onClick={() => handleStatusChange(review._id, "hidden")}
-                          disabled={updatingId === review._id || review.status === "hidden"}
-                        >
-                          {updatingId === review._id ? (
-                            <span className="h-4 w-4 rounded-full border-2 border-blue-500 border-t-transparent animate-spin" />
-                          ) : (
-                            <EyeOff className="h-4 w-4" />
-                          )}
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>Hide Review</TooltipContent>
-                    </Tooltip>
+              <TableCell>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" className="h-8 w-8 p-0">
+                      <span className="sr-only">Open menu</span>
+                      <MoreHorizontal className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-48">
+                    <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
 
-                    {/* REPLY BUTTON */}
-                    <Dialog open={replyingTo === review._id} onOpenChange={(open) => !open && setReplyingTo(null)}>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <DialogTrigger asChild>
-                            <Button
-                              variant="outline"
-                              size="icon"
-                              className="h-8 w-8"
-                              onClick={() => {
-                                setReplyingTo(review._id);
-                                setReplyText("");
-                              }}
-                            >
-                              <Reply className="h-4 w-4" />
-                            </Button>
-                          </DialogTrigger>
-                        </TooltipTrigger>
-                        <TooltipContent>Reply to Review</TooltipContent>
-                      </Tooltip>
-                      <DialogContent>
-                        <DialogHeader>
-                          <DialogTitle>Reply to Review</DialogTitle>
-                        </DialogHeader>
-                        <div className="space-y-4">
-                          <div className="p-4 bg-muted rounded-lg">
-                            <div className="flex items-center space-x-2 mb-2">
-                              {renderStars(review.rating)}
-                            </div>
-                            <p className="text-sm">{review.comment}</p>
-                          </div>
-                          <Textarea
-                            placeholder="Write your reply..."
-                            value={replyText}
-                            onChange={(e) => setReplyText(e.target.value)}
-                            rows={4}
-                          />
-                          <div className="flex justify-end space-x-2">
-                            <Button
-                              variant="outline"
-                              onClick={() => setReplyingTo(null)}
-                            >
-                              Cancel
-                            </Button>
-                            <Button
-                              onClick={() => handleReply(review._id)}
-                              disabled={!replyText.trim()}
-                            >
-                              Send Reply
-                            </Button>
-                          </div>
-                        </div>
-                      </DialogContent>
-                    </Dialog>
+                    {onView && (
+                      <DropdownMenuItem onClick={() => onView(review)}>
+                        <Eye className="mr-2 h-4 w-4" />
+                        View Details
+                      </DropdownMenuItem>
+                    )}
 
-                    {/* MORE ACTIONS DROPDOWN */}
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button
-                          variant="outline"
-                          size="icon"
-                          className="h-8 w-8"
-                        >
-                          <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem>
-                          <Eye className="mr-2 h-4 w-4" />
-                          View Full Review
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          className="text-destructive focus:bg-destructive/10"
-                          onClick={() => handleDelete(review._id)}
-                          disabled={deletingId === review._id}
-                        >
-                          {deletingId === review._id ? (
-                            <span className="mr-2 h-4 w-4 rounded-full border-2 border-destructive border-t-transparent animate-spin" />
-                          ) : (
-                            <Trash2 className="mr-2 h-4 w-4" />
-                          )}
-                          {deletingId === review._id ? "Deleting..." : "Delete"}
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TooltipProvider>
-                </div>
+                    {onEdit && (
+                      <DropdownMenuItem onClick={() => onEdit(review)}>
+                        <Edit className="mr-2 h-4 w-4" />
+                        Edit Review
+                      </DropdownMenuItem>
+                    )}
+
+                    <DropdownMenuSeparator />
+                    <DropdownMenuLabel>Moderation</DropdownMenuLabel>
+
+                    {onApprove && review.status !== "approved" && (
+                      <DropdownMenuItem
+                        onClick={() => onApprove(review._id)}
+                        className="text-green-600 focus:text-green-600"
+                      >
+                        <CheckCircle className="mr-2 h-4 w-4" />
+                        Approve Review
+                      </DropdownMenuItem>
+                    )}
+
+                    {onReject && review.status !== "rejected" && (
+                      <DropdownMenuItem
+                        onClick={() => onReject(review._id)}
+                        className="text-orange-600 focus:text-orange-600"
+                      >
+                        <XCircle className="mr-2 h-4 w-4" />
+                        Reject Review
+                      </DropdownMenuItem>
+                    )}
+
+                    <DropdownMenuSeparator />
+
+                    {onDelete && (
+                      <DropdownMenuItem
+                        onClick={() => onDelete(review)}
+                        className="text-destructive focus:text-destructive"
+                      >
+                        <Trash2 className="mr-2 h-4 w-4" />
+                        Delete Review
+                      </DropdownMenuItem>
+                    )}
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </TableCell>
             </TableRow>
           ))}
         </TableBody>
       </Table>
+
+      {/* Bulk Actions */}
+      {selectedReviews.length > 0 && (
+        <div className="border-t bg-muted/50 px-4 py-3">
+          <div className="flex items-center justify-between">
+            <p className="text-sm text-muted-foreground">
+              {selectedReviews.length} review{selectedReviews.length > 1 ? "s" : ""} selected
+            </p>
+            <div className="flex items-center space-x-2">
+              <Button variant="outline" size="sm">
+                Export Selected
+              </Button>
+              {onApprove && (
+                <Button variant="outline" size="sm" className="text-green-600 bg-transparent">
+                  <CheckCircle className="mr-2 h-4 w-4" />
+                  Approve Selected
+                </Button>
+              )}
+              {onReject && (
+                <Button variant="outline" size="sm" className="text-orange-600 bg-transparent">
+                  <XCircle className="mr-2 h-4 w-4" />
+                  Reject Selected
+                </Button>
+              )}
+              {onDelete && (
+                <Button variant="destructive" size="sm">
+                  Delete Selected
+                </Button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
-  );
+  )
 }

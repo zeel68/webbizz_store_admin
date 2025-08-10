@@ -28,11 +28,12 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { MoreHorizontal, Eye, Edit, Truck, Search, X, CheckCircle, AlertCircle, Package, CreditCard, Clock, XCircle } from 'lucide-react';
-import { formatDate, formatCurrency } from "@/lib/utils";
+
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useOrderStore } from "@/store/orderStore";
 import { toast } from "sonner";
+import { formatCurrency } from "@/lib/utils";
 
 const statusColors = {
   pending: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400",
@@ -239,7 +240,7 @@ export function OrdersTable({ orders, isLoading }: OrderTableProps) {
                     </TableCell>
                     <TableCell>
                       <div className="text-sm">
-                        {formatDate(order.created_at || order.createdAt)}
+                        {order.created_at}
                       </div>
                     </TableCell>
                     <TableCell className="text-right">
