@@ -86,6 +86,7 @@ export const useHomepageStore = create<HomepageState>()(
                     const response = await apiClient.get('/store-admin/homepage/config') as ApiResponse<any>
                     const data = response
                     console.log(response);
+                    ;
 
                     if (data.success) {
                         const config = data.data
@@ -230,19 +231,17 @@ export const useHomepageStore = create<HomepageState>()(
                 console.log(category);
 
                 try {
-                    const response = await apiClient.post('/store-admin/homepage/trendingCategory', category
-
-
-                    ) as ApiResponse<any>
+                    const response = await apiClient.post('/store-admin/homepage/trendingCategory', { category_id: category, display_order: displayOrder }) as ApiResponse<any>
                     console.log(response);
 
                     const data = response as ApiResponse<any>
 
                     if (data.success) {
-                        set(state => ({
-                            trendingCategories: [...state.trendingCategories, data.data],
-                            trendingCategoriesLoading: false
-                        }))
+                        // set(state => ({
+                        //     trendingCategories: [...state.trendingCategories, data.data],
+                        //     trendingCategoriesLoading: false
+                        // }))
+                        get().fetchTrendingCategories();
                     } else {
                         set({ error: data.data.message, trendingCategoriesLoading: false })
                     }
@@ -310,11 +309,12 @@ export const useHomepageStore = create<HomepageState>()(
             fetchTrendingProducts: async () => {
                 set({ trendingProductsLoading: true, error: null })
                 try {
-                    const response = await fetch('/store-admin/homepage/trending-products')
-                    const data = await response.json()
+                    const response = await apiClient.get('/store-admin/homepage/trendingProducts')
+                    const data = response as any
+                    console.log("res", response);
 
                     if (data.success) {
-                        set({ trendingProducts: data.data, trendingProductsLoading: false })
+                        set({ trendingProducts: data.data.data, trendingProductsLoading: false })
                     } else {
                         set({ error: data.message, trendingProductsLoading: false })
                     }
@@ -329,19 +329,15 @@ export const useHomepageStore = create<HomepageState>()(
             addTrendingProduct: async (productId: string, displayOrder = 0) => {
                 set({ trendingProductsLoading: true, error: null })
                 try {
-                    const response = await fetch('/store-admin/homepage/trending-products', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ product_id: productId, display_order: displayOrder })
+                    const response = await apiClient.post('/store-admin/homepage/trendingProducts', {
+                        product_id: productId, display_order: displayOrder
                     })
 
-                    const data = await response.json()
+                    const data = response.data as any
+                    console.log(response);
 
                     if (data.success) {
-                        set(state => ({
-                            trendingProducts: [...state.trendingProducts, data.data],
-                            trendingProductsLoading: false
-                        }))
+                        // get().fetchTrendingProducts()
                     } else {
                         set({ error: data.message, trendingProductsLoading: false })
                     }
@@ -356,7 +352,7 @@ export const useHomepageStore = create<HomepageState>()(
             updateTrendingProduct: async (id: string, displayOrder: number) => {
                 set({ trendingProductsLoading: true, error: null })
                 try {
-                    const response = await fetch(`/store-admin/homepage/trending-products/${id}`, {
+                    const response = await fetch(`/store-admin/homepage/trendingProducts/${id}`, {
                         method: 'PUT',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ display_order: displayOrder })

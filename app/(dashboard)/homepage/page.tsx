@@ -36,7 +36,7 @@ export default function HomepagePage() {
         // fetchHomepageConfig()
         fetchHeroSlides()
         fetchTrendingCategories()
-        // fetchTrendingProducts()
+        fetchTrendingProducts()
         // fetchTestimonials()
     }, [])
 

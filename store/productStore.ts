@@ -21,7 +21,7 @@ interface ProductState {
     deleteProduct: (id: string) => Promise<void>
     fetchProductStats: () => Promise<void>
     assignProductsToCategory: (prodoductsId: string[], categoryId: string) => Promise<void>
-    togglePoductStatus: (productId: string) => Promise<void>
+    togglePoductStatus: (productId: string, status: boolean) => Promise<void>
     // Variant actions
     createVariant: (productId: string, variant: Omit<iProductVariant, '_id' | 'product_id'>) => Promise<void>
     updateVariant: (variantId: string, variant: Partial<iProductVariant>) => Promise<void>
@@ -235,6 +235,7 @@ export const useProductStore = create<ProductState>()(
 
                     if (response.success) {
                         set({ loading: false })
+
                     } else {
                         throw new Error(response.data?.message || "Failed to add product to category")
                     }
@@ -243,7 +244,29 @@ export const useProductStore = create<ProductState>()(
                     throw error
                 }
             },
-            togglePoductStatus: async (productId: string) => { },
+            togglePoductStatus: async (productId: string, status: boolean) => {
+                set({ loading: true, error: null });
+                try {
+
+
+                    const response = await apiClient.post(
+                        `/store-admin/products/${productId}/status`, { status }
+                    ) as any;
+
+                    if (response.success) {
+
+                        get().fetchProducts()
+                    } else {
+                        const errorMsg = response.error || "Failed to delete category";
+                        set({ error: errorMsg, loading: false });
+                        throw new Error(errorMsg);
+                    }
+                } catch (error: any) {
+                    const errorMessage = error.message || "Failed to delete category";
+                    set({ error: errorMessage, loading: false });
+                    throw new Error(errorMessage);
+                }
+            },
 
             // Clear error
             clearError: () => set({ error: null }),

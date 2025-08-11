@@ -101,6 +101,7 @@ export const CURRENCY_SYMBOLS = {
     JPY: "¥",
     CAD: "C$",
     AUD: "A$",
+    INR: "₹"
 } as const
 
 export const INVENTORY_ALERTS = {

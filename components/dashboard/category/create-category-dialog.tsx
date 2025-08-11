@@ -75,6 +75,7 @@ export function CreateCategoryDialog({
   const [formData, setFormData] = useState<iCategoryFormData>({
     name: "",
     display_name: "",
+    slug: "",
     description: "",
     parent_id: "",
     sort_order: 1,
@@ -96,6 +97,7 @@ export function CreateCategoryDialog({
       setFormData({
         name: category.display_name || "",
         display_name: category.display_name || "",
+        slug: category.slug || "",
         description: category.description || "",
         parent_id: category.parent_id || "",
         sort_order: category.sort_order || 1,
@@ -113,6 +115,7 @@ export function CreateCategoryDialog({
       setFormData({
         name: "",
         display_name: "",
+        slug: "",
         description: "",
         parent_id: "",
         sort_order: 1,
@@ -177,6 +180,7 @@ export function CreateCategoryDialog({
       const categoryData = {
         display_name:
           formData.display_name.toLowerCase(),
+        slug: formData.display_name.toLowerCase().replace(" ", "-"),
         description: formData.description,
         parent_id: formData.parent_id || null,
         sort_order: Number(formData.sort_order),
@@ -333,14 +337,14 @@ export function CreateCategoryDialog({
                           />
                         </div>
                         <div className="space-y-1">
-                          <Label htmlFor="name">Internal Name</Label>
+                          <Label htmlFor="name">Slug</Label>
                           <Input
                             id="name"
-                            value={formData.name}
+                            value={formData.slug}
                             onChange={(e) =>
                               setFormData((prev) => ({
                                 ...prev,
-                                name: e.target.value,
+                                slug: e.target.value,
                               }))
                             }
                             placeholder="Auto-generated from display name"

@@ -54,8 +54,8 @@ interface iProduct {
     is_active: boolean
     is_featured: boolean
     visibility: "public" | "private" | "hidden"
-    created_at?: string
-    updated_at?: string
+    createdAt?: string
+    updatedAt?: string
 }
 
 interface iProductFormData {

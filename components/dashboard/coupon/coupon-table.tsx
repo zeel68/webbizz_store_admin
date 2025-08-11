@@ -39,7 +39,7 @@ interface Coupon {
   minimum_order_amount?: number
   maximum_discount_amount?: number
   usage_limit?: number
-  used_count: number
+  usage_count: number
   start_date: string
   end_date?: string
   is_active: boolean
@@ -157,7 +157,7 @@ export function CouponsTable({
       )
     }
 
-    if (coupon.usage_limit && coupon.used_count >= coupon.usage_limit) {
+    if (coupon.usage_limit && coupon.usage_count >= coupon.usage_limit) {
       return (
         <Badge variant="secondary" className="text-orange-600 bg-orange-50 border-0 flex items-center gap-1">
           <AlertTriangle className="h-3 w-3" />
@@ -176,16 +176,17 @@ export function CouponsTable({
 
   const getUsageProgress = (coupon: Coupon) => {
     if (!coupon.usage_limit) {
-      return <div className="text-sm text-muted-foreground">{coupon.used_count} uses (unlimited)</div>
+      return <div className="text-sm text-muted-foreground">{coupon.usage_count} uses (unlimited)</div>
     }
 
-    const percentage = (coupon.used_count / coupon.usage_limit) * 100
+    const percentage = (coupon.usage_count / coupon.usage_limit) * 100
+    console.log("per", percentage);
 
     return (
       <div className="space-y-1">
         <div className="flex justify-between text-sm">
           <span>
-            {coupon.used_count} / {coupon.usage_limit} uses
+            {coupon.usage_count} / {coupon.usage_limit} uses
           </span>
           <span className="text-muted-foreground">{percentage.toFixed(0)}%</span>
         </div>

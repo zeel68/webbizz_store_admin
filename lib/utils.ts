@@ -5,9 +5,9 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
-export function formatCurrency(amount: number, currency = "USD", locale = "en-US"): string {
+export function formatCurrency(amount: number, currency = "INR", locale = "en-US"): string {
   if (typeof amount !== "number" || isNaN(amount)) {
-    return "$0.00"
+    return "₹0.00"
   }
 
   return new Intl.NumberFormat(locale, {

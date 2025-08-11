@@ -25,6 +25,7 @@ import { file } from "zod"
 interface iProductFormData {
     name: string
     description?: string
+    slug: string
     price: number
     compare_price?: number
     cost_price?: number
@@ -151,6 +152,8 @@ export default function EditProductPage() {
     // Populate form with product data
     useEffect(() => {
         if (selectedProduct) {
+            console.log("selected_prod", selectedProduct);
+
             const normalizedProduct = {
                 ...selectedProduct,
                 stock: {
@@ -173,7 +176,7 @@ export default function EditProductPage() {
                     keywords: selectedProduct.seo.keywords || [],
                 } : undefined,
             }
-            form.reset(normalizedProduct)
+            form.reset(normalizedProduct as any)
             setTags(selectedProduct.tags || [])
             setAttributes(selectedProduct.attributes || {})
             setSpecifications(selectedProduct.specifications || {})
@@ -362,7 +365,11 @@ export default function EditProductPage() {
             const primaryUrl = imageUrls[primaryIndex] || imageUrls[0]
             const otherUrls = imageUrls.filter((_, i) => i !== primaryIndex)
             const finalImages = [primaryUrl, ...otherUrls]
-            data.category = data.store_category_id
+            if (data.store_category_id) {
+                data.category = data.store_category_id ?? ""
+            }
+            data.slug = data.name.toLowerCase().replace(" ", "-")
+
             const productData: iProductFormData = {
                 ...data,
                 tags,
@@ -648,7 +655,7 @@ export default function EditProductPage() {
 
     const renderAttributesTab = () => (
         <div className="space-y-6">
-            <Card>
+            {/* <Card>
                 <CardHeader>
                     <CardTitle>Product Attributes</CardTitle>
                 </CardHeader>
@@ -693,7 +700,7 @@ export default function EditProductPage() {
                         </Button>
                     </div>
                 </CardContent>
-            </Card>
+            </Card> */}
 
             <Card>
                 <CardHeader>
@@ -808,10 +815,10 @@ export default function EditProductPage() {
                             {newVariant.options.length > 0 && (
                                 <div className="flex flex-wrap gap-2">
                                     {newVariant.options.map((option, index) => (
-                                        <Badge key={index} variant="secondary" className="flex items-center gap-1">
+                                        <Badge key={index} variant="secondary" className="flex items-center gap-1 text-md">
                                             {option}
                                             <X
-                                                className="h-3 w-3 cursor-pointer"
+                                                className="h-5 w-5 cursor-pointer"
                                                 onClick={() => removeVariantOption(option)}
                                             />
                                         </Badge>

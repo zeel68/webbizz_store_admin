@@ -61,13 +61,13 @@ interface Category {
 }
 
 interface ProductsTableProps {
-    products: Product[]
+    products: iProduct[]
     categories: Category[]
     isLoading: boolean
-    onView?: (product: Product) => void
-    onEdit?: (product: Product) => void
-    onDelete?: (product: Product) => void
-    onDuplicate?: (product: Product) => void
+    onView?: (product: iProduct) => void
+    onEdit?: (product: iProduct) => void
+    onDelete?: (product: iProduct) => void
+    onDuplicate?: (product: iProduct) => void
 }
 
 export function ProductsTable({
@@ -80,7 +80,7 @@ export function ProductsTable({
     onDuplicate,
 }: ProductsTableProps) {
     const [selectedProducts, setSelectedProducts] = useState<string[]>([])
-    const { deleteProduct } = useProductStore()
+    const { deleteProduct, togglePoductStatus } = useProductStore()
     const handleSelectAll = (checked: boolean) => {
         if (checked) {
             setSelectedProducts(products.map((product) => product._id))
@@ -108,13 +108,34 @@ export function ProductsTable({
             </Badge>
         )
     }
+    const getStockStatus = (product: iProduct) => {
+        const quantity = product.stock?.quantity || 0
+        const reserved = product.stock?.reserved || 0
+        const available = quantity - reserved
 
-    const getStockBadge = (product: Product) => {
+        if (available <= 0) return { status: "Out of Stock", variant: "destructive" as const }
+        if (available <= 10) return { status: "Low Stock", variant: "secondary" as const }
+        return { status: "In Stock", variant: "default" as const }
+    }
+
+
+    const getStockBadge = (product: iProduct) => {
+        const availableStock = (product.stock?.quantity || 0) - (product.stock?.reserved || 0)
+        const stockStatus = getStockStatus(product)
+
         if (!product.stock?.track_inventory) {
             return (
-                <Badge variant="outline" className="text-muted-foreground">
-                    Not tracked
-                </Badge>
+                <div className="space-y-1">
+                    <div className="font-medium text-sm md:text-base">{availableStock}</div>
+                    {product.stock?.reserved && product.stock.reserved > 0 && (
+                        <div className="text-xs text-muted-foreground">
+                            {product.stock.reserved} reserved
+                        </div>
+                    )}
+                    <Badge variant={stockStatus.variant} className="text-xs">
+                        {stockStatus.status}
+                    </Badge>
+                </div>
             )
         }
 
@@ -210,9 +231,7 @@ export function ProductsTable({
         }
 
         try {
-            console.log("status", status);
-
-            await toggleCategoryStatus(id, status);
+            await togglePoductStatus(id, status);
             if (!skipConfirm) toast.success("Category status change successfully");
         } catch (error: any) {
             toast.error(error.message || "Failed to change category status");
@@ -220,12 +239,11 @@ export function ProductsTable({
     };
 
     const handleMultipleStatus = async (status: boolean) => {
-        if (selectedCategories.length === 0) return;
-
+        if (selectedProducts.length === 0) return;
         try {
-            await Promise.all(selectedCategories.map(id => handleChangeStatus(id, status, true)));
-            toast.success(`Deleted ${selectedCategories.length} categories`);
-            setSelectedCategories([]);
+            await Promise.all(selectedProducts.map(id => handleChangeStatus(id, status, true)));
+            toast.success(`Deleted ${selectedProducts.length} categories`);
+            setSelectedProducts([]);
         } catch (error: any) {
             toast.error(error.message || "Failed to chaneg categories status");
         }
@@ -233,7 +251,7 @@ export function ProductsTable({
 
     if (isLoading) {
         return (
-            <div className="rounded-md border">
+            <div className="rounded-md border ">
                 <Table>
                     <TableHeader>
                         <TableRow>
@@ -405,7 +423,7 @@ export function ProductsTable({
 
                             <TableCell>
                                 <div className="flex items-center">
-                                    <Tag className="h-4 w-4 mr-2 text-muted-foreground" />""
+                                    <Tag className="h-4 w-4 mr-2 text-muted-foreground" />
                                     <span className="text-sm">{getCategoryName(product.category)}</span>
                                 </div>
                             </TableCell>
@@ -433,7 +451,7 @@ export function ProductsTable({
                             <TableCell>
                                 <div className="flex items-center text-sm text-muted-foreground">
                                     <Calendar className="h-3 w-3 mr-2" />
-                                    <span>{formatRelativeTime(product.createdAt)}</span>
+                                    <span>{formatRelativeTime(product.createdAt ?? "")}</span>
                                 </div>
                             </TableCell>
 
@@ -472,15 +490,15 @@ export function ProductsTable({
 
                                         <DropdownMenuSeparator />
 
-                                        {onDelete && (
-                                            <DropdownMenuItem
-                                                onClick={() => onDelete(product)}
-                                                className="text-destructive focus:text-destructive"
-                                            >
-                                                <Trash2 className="mr-2 h-4 w-4" />
-                                                Delete Product
-                                            </DropdownMenuItem>
-                                        )}
+                                        {/* {onDelete && ( */}
+                                        <DropdownMenuItem
+                                            onClick={() => handleDelete(product._id, product.name)}
+                                            className="text-destructive focus:text-destructive"
+                                        >
+                                            <Trash2 className="mr-2 h-4 w-4" />
+                                            Delete Product
+                                        </DropdownMenuItem>
+                                        {/* )} */}
                                     </DropdownMenuContent>
                                 </DropdownMenu>
                             </TableCell>
@@ -500,15 +518,15 @@ export function ProductsTable({
                             <Button variant="outline" size="sm">
                                 Export Selected
                             </Button>
-                            <Button variant="outline" size="sm">
+                            <Button variant="outline" size="sm" onClick={() => handleMultipleStatus(true)}>
                                 <CheckCircle className="mr-2 h-4 w-4" />
                                 Activate Selected
                             </Button>
-                            <Button variant="outline" size="sm">
+                            <Button variant="outline" size="sm" onClick={() => handleMultipleStatus(false)}>
                                 <XCircle className="mr-2 h-4 w-4" />
                                 Deactivate Selected
                             </Button>
-                            <Button variant="destructive" size="sm">
+                            <Button variant="destructive" size="sm" onClick={handleMultipleDelete}>
                                 Delete Selected
                             </Button>
                         </div>

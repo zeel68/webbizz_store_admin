@@ -42,9 +42,16 @@ export function TrendingProductsManager() {
         }
     }, [productInfo, fetchProducts])
 
-    const availableProducts = productInfo?.products?.filter(product =>
-        !trendingProducts.some(trending => trending.product_id === product._id)
-    ) || []
+    const availableProducts =
+        productInfo?.products?.filter(product => {
+            return !(
+                Array.isArray(trendingProducts) &&
+                trendingProducts.some(
+                    trending => String(trending.product_id) === String(product._id)
+                )
+            );
+        }) || [];
+
 
     const handleOpenDialog = (trendingProduct?: iTrendingProduct) => {
         if (trendingProduct) {
@@ -151,12 +158,12 @@ export function TrendingProductsManager() {
                     {trendingProducts
                         .sort((a, b) => a.display_order - b.display_order)
                         .map((trendingProduct) => {
-                            const productInfo = getProductInfo(trendingProduct.product_id)
+                            const productInfo = trendingProduct.product_id as any
                             return (
                                 <Card key={trendingProduct._id} className="overflow-hidden">
                                     <div className="aspect-video relative">
                                         <img
-                                            src={productInfo?.images?.[0] || "/placeholder.svg"}
+                                            src={productInfo.images[0] || "/placeholder.svg"}
                                             alt={productInfo?.name || "Product"}
                                             className="w-full h-full object-cover"
                                         />

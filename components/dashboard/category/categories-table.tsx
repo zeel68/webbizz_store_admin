@@ -168,13 +168,13 @@ export function CategoriesTable({
 
         return (
             <React.Fragment key={category._id}>
-                <TableRow className="hover:bg-muted/50">
+                <TableRow className="hover:bg-muted/50  border-b border-gray-600">
                     <TableCell>
                         <input
                             type="checkbox"
                             checked={selectedCategories.includes(category._id)}
                             onChange={(e) => handleSelectCategory(category._id, e.target.checked)}
-                            className="rounded border-gray-300"
+                            className="rounded border-gray-600"
                         />
                     </TableCell>
 
@@ -395,16 +395,16 @@ export function CategoriesTable({
 
 
     return (
-        <div className="rounded-md border">
+        <div className="rounded-md border border-gray-600">
             <Table>
                 <TableHeader>
-                    <TableRow>
-                        <TableHead className="w-12">
+                    <TableRow className="border-b border-gray-600 ">
+                        <TableHead className="w-12 ">
                             <input
                                 type="checkbox"
                                 checked={selectedCategories.length === categories.length}
                                 onChange={(e) => handleSelectAll(e.target.checked)}
-                                className="rounded border-gray-300"
+                                className="rounded border-gray-600"
                             />
                         </TableHead>
                         <TableHead>Category</TableHead>

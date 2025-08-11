@@ -41,7 +41,7 @@ interface Product {
 export function AddProductsToCategoryDialog({ open, onOpenChange, category }: AddProductsToCategoryDialogProps) {
     const { productInfo, fetchProducts, loading: productsLoading, assignProductsToCategory } = useProductStore()
     const { loading: categoryLoading } = useCategoryStore()
-
+    const [editProducts, setEditingProducts] = useState<boolean>(false)
     const [selectedProducts, setSelectedProducts] = useState<string[]>([])
     const [searchTerm, setSearchTerm] = useState("")
     const [isSubmitting, setIsSubmitting] = useState(false)
@@ -56,7 +56,13 @@ export function AddProductsToCategoryDialog({ open, onOpenChange, category }: Ad
                 limit: 100, // Get more products for selection
                 search: searchTerm || undefined,
             })
-            setSelectedProducts([])
+            if (category.products.length > 0) {
+                setEditingProducts(true)
+            } else {
+                setEditingProducts(false)
+            }
+
+            setSelectedProducts(category.products)
             setCurrentPage(1)
         }
     }, [open, searchTerm, fetchProducts])
@@ -94,7 +100,7 @@ export function AddProductsToCategoryDialog({ open, onOpenChange, category }: Ad
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
 
-        if (!category || selectedProducts.length === 0) {
+        if ((!category || selectedProducts.length === 0) && !editProducts) {
             toast.error("Please select at least one product")
             return
         }
@@ -216,6 +222,7 @@ export function AddProductsToCategoryDialog({ open, onOpenChange, category }: Ad
                                         <div
                                             key={product._id}
                                             className="flex items-center space-x-3 p-3 border rounded-lg hover:bg-muted/50 transition-colors"
+                                            onClick={() => { handleSelectProduct(product._id, !selectedProducts.includes(product._id)) }}
                                         >
                                             <Checkbox
                                                 checked={selectedProducts.includes(product._id)}
@@ -286,7 +293,7 @@ export function AddProductsToCategoryDialog({ open, onOpenChange, category }: Ad
                     <Button type="button" variant="outline" onClick={handleClose} disabled={isFormDisabled}>
                         Cancel
                     </Button>
-                    <Button onClick={handleSubmit} disabled={isFormDisabled || selectedProducts.length === 0}>
+                    <Button onClick={handleSubmit} disabled={isFormDisabled}>
                         {isSubmitting ? (
                             <>
                                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -295,7 +302,7 @@ export function AddProductsToCategoryDialog({ open, onOpenChange, category }: Ad
                         ) : (
                             <>
                                 <Save className="mr-2 h-4 w-4" />
-                                Add {selectedProducts.length} Product{selectedProducts.length !== 1 ? "s" : ""}
+                                {editProducts ? "Update" : `Add ${selectedProducts.length} Product${selectedProducts.length !== 1 ? "s" : ""}`}
                             </>
                         )}
                     </Button>

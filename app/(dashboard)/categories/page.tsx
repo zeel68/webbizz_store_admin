@@ -176,6 +176,7 @@ export default function Page() {
     setAssignProductDialogOpen(true)
   }
   const handleDialogClose = () => {
+    fetchCategories()
     setIsCreateDialogOpen(false);
     setIsEditDialogOpen(false);
     setSelectedCategory(null);

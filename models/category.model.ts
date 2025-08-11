@@ -30,6 +30,7 @@ interface iCategory {
 interface iStoreCategory {
     _id: string;
     category_id: string;
+    slug: string;
     store_id: string;
     is_primary: boolean;
     products: string[];
@@ -52,6 +53,7 @@ interface iStoreCategory {
 interface iCategoryFormData {
     name: string;
     display_name: string;
+    slug: string;
     description: string;
     parent_id?: string;
     sort_order: number;

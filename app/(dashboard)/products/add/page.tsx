@@ -27,6 +27,7 @@ import { RichTextEditor } from "@/components/ui/rich-text-editor"
 interface iProductFormData {
     name: string
     description?: string
+    slug: string
     price: number
     compare_price?: number
     cost_price?: number
@@ -65,6 +66,7 @@ interface iProductFormData {
 const productSchema = z.object({
     name: z.string().min(1, "Product name is required"),
     description: z.string().optional(),
+    // slug: z.string().min(1, "slug is required"),
     price: z.number().min(0, "Price must be positive"),
     compare_price: z.number().optional(),
     cost_price: z.number().optional(),
@@ -150,6 +152,7 @@ export default function AddProductPage() {
         defaultValues: {
             name: "qw",
             description: "qwqw",
+            slug: "",
             price: 1,
             compare_price: 2,
             cost_price: 1,
@@ -339,12 +342,13 @@ export default function AddProductPage() {
     };
 
     const onSubmit = async (data: any) => {
-        console.log("Hello");
+
 
         try {
             toast.info("Uploading images...")
             const urls = await uploadMultipleToCloudinary(selectedImages)
 
+            data.slug = data.name.toLowerCase().replace(" ", "-")
             // Combine form data with complex state
             const productData: iProductFormData = {
                 ...data,
