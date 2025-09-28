@@ -251,7 +251,7 @@
 //                             <Input
 //                                 type="number"
 //                                 step="0.01"
-//                                 min="0"
+//                                 
 //                                 value={newVariant.price}
 //                                 onChange={(e) => setNewVariant(prev => ({
 //                                     ...prev,
@@ -264,7 +264,7 @@
 //                             <Label>Stock</Label>
 //                             <Input
 //                                 type="number"
-//                                 min="0"
+//                                 
 //                                 value={newVariant.stock}
 //                                 onChange={(e) => setNewVariant(prev => ({
 //                                     ...prev,
@@ -358,7 +358,7 @@
 //                     <Input
 //                         type="number"
 //                         step="0.01"
-//                         min="0"
+//                         
 //                         value={editedVariant.price}
 //                         onChange={(e) => setEditedVariant(prev => ({
 //                             ...prev,
@@ -370,7 +370,7 @@
 //                     <Label>Stock</Label>
 //                     <Input
 //                         type="number"
-//                         min="0"
+//                         
 //                         value={editedVariant.stock}
 //                         onChange={(e) => setEditedVariant(prev => ({
 //                             ...prev,

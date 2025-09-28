@@ -1,9 +1,32 @@
-// app/api/auth/[...nextauth]/route.ts or similar location
+// app/api/auth/[...nextauth]/route.ts
 import NextAuth from "next-auth"
 import GoogleProvider from "next-auth/providers/google"
 import CredentialsProvider from "next-auth/providers/credentials"
 import ApiClient from "./lib/apiCalling"
 
+// --- helper to refresh tokens ---
+async function refreshAccessToken(token: any) {
+  try {
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/auth/refresh`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ refreshToken: token.refreshToken }),
+    })
+
+    if (!res.ok) throw new Error("Failed to refresh access token")
+    const data = await res.json()
+
+    return {
+      ...token,
+      accessToken: data.accessToken,
+      refreshToken: data.refreshToken ?? token.refreshToken,
+      accessTokenExpires: Date.now() + (data.expiresIn || 3600) * 1000, // default 1h
+    }
+  } catch (err) {
+    console.error("Refresh token error:", err)
+    return { ...token, error: "RefreshAccessTokenError" }
+  }
+}
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
   providers: [
@@ -32,7 +55,6 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 
           const { success } = apiResponse
           const data = apiResponse.data as ApiResponse<iLoginResponseData>
-          console.log(apiResponse);
 
           if (!success || !data?.data) {
             console.warn("Login failed", apiResponse)
@@ -105,17 +127,29 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     },
 
     async jwt({ token, user }) {
+      // Initial login
       if (user) {
-        token.id = user.id
-        token.accessToken = user.accessToken
-        token.refreshToken = user.refreshToken
-        token.role = user.role
-        token.storeId = user.storeId
-        token.phoneNumber = user.phoneNumber
-        token.email = user.email ?? ""
-        token.name = user.name ?? ""
+        return {
+          ...token,
+          id: user.id,
+          accessToken: user.accessToken,
+          refreshToken: user.refreshToken,
+          role: user.role,
+          storeId: user.storeId,
+          phoneNumber: user.phoneNumber,
+          email: user.email ?? "",
+          name: user.name ?? "",
+          accessTokenExpires: Date.now() + 24 * 60 * 60 * 1000, // assume 1 day if API doesn’t return
+        }
       }
-      return token
+
+      // Still valid → return existing token
+      if (Date.now() < (token.accessTokenExpires ?? 0)) {
+        return token
+      }
+
+      // Expired → refresh it
+      return await refreshAccessToken(token)
     },
 
     async session({ session, token }) {
@@ -130,6 +164,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         email: token.email ?? "",
         name: token.name ?? "",
       }
+      session.error = token.error
       return session
     },
   },

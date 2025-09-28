@@ -26,9 +26,10 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Plus, X, Trash2, Loader2 } from "lucide-react";
-import { toast } from "sonner";
+
 import ImageUpload from "@/components/shared/image-upload";
 import { useCategoryStore } from "@/store/categoryStore";
+import { toast } from "sonner";
 
 
 interface CreateCategoryDialogProps {
@@ -640,6 +641,8 @@ export function CreateCategoryDialog({
                                     key={index}
                                     variant="secondary"
                                     className="text-xs cursor-pointer px-1.5 py-0"
+                                    onClick={() =>
+                                      handleRemoveFilterOption(option)}
                                   >
                                     <span className="max-w-[80px] truncate">
                                       {option}
@@ -696,20 +699,20 @@ export function CreateCategoryDialog({
                   <CardContent className="space-y-3 p-4 pt-0">
                     {formData.attributes.length > 0 ? (
                       <div className="space-y-2">
-                        {formData.attributes.map((attribute, index) => (
+                        {formData.attributes.map((filter, index) => (
                           <div key={index} className="border rounded p-3">
                             <div className="flex items-center justify-between mb-1">
                               <h4 className="font-medium text-sm">
-                                {attribute.name}
+                                {filter.name}
                               </h4>
                               <div className="flex items-center gap-1">
                                 <Badge
                                   variant="outline"
                                   className="text-xs py-0"
                                 >
-                                  {attribute.type}
+                                  {filter.type}
                                 </Badge>
-                                {attribute.is_required && (
+                                {filter.is_required && (
                                   <Badge
                                     variant="secondary"
                                     className="text-xs py-0"
@@ -722,23 +725,31 @@ export function CreateCategoryDialog({
                                   variant="ghost"
                                   size="icon"
                                   className="h-6 w-6"
-                                  onClick={() => handleRemoveAttribute(index)}
+                                  onClick={() => handleRemoveFilter(index)}
                                 >
                                   <Trash2 className="h-3 w-3" />
                                 </Button>
                               </div>
                             </div>
-                            {attribute.default_value && (
-                              <p className="text-xs text-muted-foreground mt-1">
-                                Default: {attribute.default_value}
-                              </p>
+                            {filter.options.length > 0 && (
+                              <div className="flex flex-wrap gap-1 mt-1">
+                                {filter.options.map((option, optIndex) => (
+                                  <Badge
+                                    key={optIndex}
+                                    variant="outline"
+                                    className="text-xs"
+                                  >
+                                    {option}
+                                  </Badge>
+                                ))}
+                              </div>
                             )}
                           </div>
                         ))}
                       </div>
                     ) : (
                       <p className="text-sm text-muted-foreground text-center py-4">
-                        No attributes added yet
+                        No filters added yet
                       </p>
                     )}
 
@@ -750,25 +761,25 @@ export function CreateCategoryDialog({
                         <div className="space-y-1">
                           <Label className="text-xs">Attribute Name</Label>
                           <Input
-                            value={newAttribute.name}
+                            value={newFilter.name}
                             onChange={(e) =>
-                              setNewAttribute((prev) => ({
+                              setNewFilter((prev) => ({
                                 ...prev,
                                 name: e.target.value,
                               }))
                             }
-                            placeholder="e.g., Brand, Material"
+                            placeholder="e.g., Color, Size"
                             className="h-8 text-sm"
                           />
                         </div>
                         <div className="space-y-1">
                           <Label className="text-xs">Attribute Type</Label>
                           <Select
-                            value={newAttribute.type}
+                            value={newFilter.type}
                             onValueChange={(value) =>
-                              setNewAttribute((prev) => ({
+                              setNewFilter((prev) => ({
                                 ...prev,
-                                type: value,
+                                type: value as iFilterOption["type"]
                               }))
                             }
                           >
@@ -777,38 +788,75 @@ export function CreateCategoryDialog({
                             </SelectTrigger>
                             <SelectContent>
                               <SelectItem value="text">Text</SelectItem>
-                              <SelectItem value="number">Number</SelectItem>
+                              <SelectItem value="select">Select</SelectItem>
+                              <SelectItem value="multiselect">
+                                Multi-Select
+                              </SelectItem>
+                              <SelectItem value="range">Range</SelectItem>
                               <SelectItem value="boolean">Boolean</SelectItem>
-                              <SelectItem value="date">Date</SelectItem>
-                              <SelectItem value="url">URL</SelectItem>
                             </SelectContent>
                           </Select>
                         </div>
                       </div>
 
-                      <div className="space-y-1">
-                        <Label className="text-xs">
-                          Default Value (Optional)
-                        </Label>
-                        <Input
-                          value={newAttribute.default_value || ""}
-                          onChange={(e) =>
-                            setNewAttribute((prev) => ({
-                              ...prev,
-                              default_value: e.target.value,
-                            }))
-                          }
-                          placeholder="Enter default value"
-                          className="h-8 text-sm"
-                        />
-                      </div>
+                      {(newFilter.type === "select" ||
+                        newFilter.type === "multiselect") && (
+                          <div className="space-y-1">
+                            <Label className="text-xs">Attribute Options</Label>
+                            <div className="flex gap-1">
+                              <Input
+                                value={newFilterOption}
+                                onChange={(e) =>
+                                  setNewFilterOption(e.target.value)
+                                }
+                                placeholder="Add option"
+                                className="h-8 text-sm"
+                                onKeyDown={(e) =>
+                                  e.key === "Enter" &&
+                                  (e.preventDefault(), handleAddFilterOption())
+                                }
+                              />
+                              <Button
+                                type="button"
+                                size="icon"
+                                className="h-8 w-8"
+                                onClick={handleAddFilterOption}
+                              >
+                                <Plus className="h-3 w-3" />
+                              </Button>
+                            </div>
+                            {newFilter.options.length > 0 && (
+                              <div className="flex flex-wrap gap-1 mt-1">
+                                {newFilter.options.map((option, index) => (
+                                  <Badge
+                                    key={index}
+                                    variant="secondary"
+                                    className="text-xs cursor-pointer px-1.5 py-0"
+                                    onClick={() =>
+                                      handleRemoveFilterOption(option)}
+                                  >
+                                    <span className="max-w-[80px] truncate">
+                                      {option}
+                                    </span>
+                                    <X
+                                      className="h-3 w-3 ml-1"
+                                      onClick={() =>
+                                        handleRemoveFilterOption(option)
+                                      }
+                                    />
+                                  </Badge>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        )}
 
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
                           <Switch
-                            checked={newAttribute.is_required}
+                            checked={newFilter.is_required}
                             onCheckedChange={(checked) =>
-                              setNewAttribute((prev) => ({
+                              setNewFilter((prev) => ({
                                 ...prev,
                                 is_required: checked,
                               }))
@@ -821,8 +869,8 @@ export function CreateCategoryDialog({
                           type="button"
                           size="sm"
                           className="h-8"
-                          onClick={handleAddAttribute}
-                          disabled={!newAttribute.name.trim()}
+                          onClick={handleAddFilter}
+                          disabled={!newFilter.name.trim()}
                         >
                           Add Attribute
                         </Button>

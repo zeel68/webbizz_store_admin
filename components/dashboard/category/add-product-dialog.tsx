@@ -380,7 +380,7 @@
 //                               }
 //                               placeholder="0.00"
 //                               className="pl-10"
-//                               min="0"
+//                               
 //                               step="0.01"
 //                               required
 //                             />
@@ -399,7 +399,7 @@
 //                               )
 //                             }
 //                             placeholder="0"
-//                             min="0"
+//                             
 //                           />
 //                         </div>
 //                       </div>

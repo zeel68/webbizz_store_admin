@@ -26,6 +26,8 @@ import {
     XCircle,
     Folder,
     FolderOpen,
+    ChevronDown,
+    ChevronRight,
 } from "lucide-react"
 import { formatRelativeTime, truncateText } from "@/lib/utils"
 import { useCategoryStore } from "@/store/categoryStore"
@@ -162,13 +164,13 @@ export function CategoriesTable({
         }
     };
 
-    const renderCategoryRow = (category: Category, level = 0) => {
+    const renderCategoryRow = (category: Category, level = 0, isSubcategory: boolean) => {
         const isExpanded = expandedCategories.includes(category._id)
         const hasSubcategories = category.subcategories && category.subcategories.length > 0
 
         return (
             <React.Fragment key={category._id}>
-                <TableRow className="hover:bg-muted/50  border-b border-gray-600">
+                <TableRow className={`hover:bg-muted/50  border-b border-gray-600 ${isSubcategory ? "bg-primary/50" : "bg-primary/500"}`}>
                     <TableCell>
                         <input
                             type="checkbox"
@@ -182,7 +184,7 @@ export function CategoriesTable({
                         <div className="flex items-center space-x-3" style={{ paddingLeft: `${level * 20}px` }}>
                             {hasSubcategories && (
                                 <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={() => toggleExpanded(category._id)}>
-                                    {isExpanded ? <FolderOpen className="h-4 w-4" /> : <Folder className="h-4 w-4" />}
+                                    {isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
                                 </Button>
                             )}
 
@@ -301,7 +303,7 @@ export function CategoriesTable({
                 {/* Render subcategories if expanded */}
                 {isExpanded &&
                     hasSubcategories &&
-                    category.subcategories.map((subcategory) => renderCategoryRow(subcategory, level + 1))}
+                    category.subcategories.map((subcategory) => renderCategoryRow(subcategory, level + 1, isSubcategory))}
             </React.Fragment>
         )
     }
@@ -415,7 +417,7 @@ export function CategoriesTable({
                         <TableHead className="w-12"></TableHead>
                     </TableRow>
                 </TableHeader>
-                <TableBody>{categories.map((category) => renderCategoryRow(category))}</TableBody>
+                <TableBody>{categories.map((category) => renderCategoryRow(category, 0, false))}</TableBody>
             </Table>
 
             {/* Bulk Actions */}

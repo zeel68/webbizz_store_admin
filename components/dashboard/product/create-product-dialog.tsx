@@ -522,7 +522,7 @@
 //                             id="price"
 //                             type="number"
 //                             step="0.01"
-//                             min="0"
+//                             
 //                             {...form.register("price", { valueAsNumber: true })}
 //                             placeholder="0.00"
 //                         />
@@ -537,7 +537,7 @@
 //                             id="compare_price"
 //                             type="number"
 //                             step="0.01"
-//                             min="0"
+//                             
 //                             {...form.register("compare_price", { valueAsNumber: true })}
 //                             placeholder="0.00"
 //                         />
@@ -549,7 +549,7 @@
 //                             id="cost_price"
 //                             type="number"
 //                             step="0.01"
-//                             min="0"
+//                             
 //                             {...form.register("cost_price", { valueAsNumber: true })}
 //                             placeholder="0.00"
 //                         />
@@ -574,7 +574,7 @@
 //                         <Input
 //                             id="quantity"
 //                             type="number"
-//                             min="0"
+//                             
 //                             {...form.register("stock.quantity", { valueAsNumber: true })}
 //                             placeholder="0"
 //                         />
@@ -585,7 +585,7 @@
 //                         <Input
 //                             id="low_stock_threshold"
 //                             type="number"
-//                             min="0"
+//                             
 //                             {...form.register("stock.low_stock_threshold", { valueAsNumber: true })}
 //                             placeholder="10"
 //                         />
@@ -803,7 +803,7 @@
 //                                 <Label>Stock Quantity</Label>
 //                                 <Input
 //                                     type="number"
-//                                     min="0"
+//                                     
 //                                     value={newVariant.stock_quantity}
 //                                     onChange={(e) => setNewVariant((prev: any) => ({ ...prev, stock_quantity: Number(e.target.value) }))}
 //                                     placeholder="0"
@@ -848,7 +848,7 @@
 //                         id="weight"
 //                         type="number"
 //                         step="0.01"
-//                         min="0"
+//                         
 //                         {...form.register("shipping.weight", { valueAsNumber: true })}
 //                         placeholder="0.00"
 //                     />
@@ -862,7 +862,7 @@
 //                             <Input
 //                                 type="number"
 //                                 step="0.01"
-//                                 min="0"
+//                                 
 //                                 {...form.register("shipping.dimensions.length", { valueAsNumber: true })}
 //                                 placeholder="Length"
 //                             />
@@ -872,7 +872,7 @@
 //                             <Input
 //                                 type="number"
 //                                 step="0.01"
-//                                 min="0"
+//                                 
 //                                 {...form.register("shipping.dimensions.width", { valueAsNumber: true })}
 //                                 placeholder="Width"
 //                             />
@@ -882,7 +882,7 @@
 //                             <Input
 //                                 type="number"
 //                                 step="0.01"
-//                                 min="0"
+//                                 
 //                                 {...form.register("shipping.dimensions.height", { valueAsNumber: true })}
 //                                 placeholder="Height"
 //                             />

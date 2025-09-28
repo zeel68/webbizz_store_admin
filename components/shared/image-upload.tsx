@@ -244,7 +244,7 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
                   <img
                     src={getImageUrl(item) || "/placeholder.svg"}
                     alt={`Upload ${index + 1}`}
-                    className="w-full h-full object-cover"
+                    className="w-full h-full object-contain"
                     onError={(e) => {
                       const target = e.target as HTMLImageElement
                       target.src = "/placeholder.svg?height=200&width=200&text=Error"
@@ -276,6 +276,7 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
                       }}
                       disabled={disabled}
                       className="h-8 w-8 p-0"
+                      type="button" // Fix: Add type button
                     >
                       <Star className="h-4 w-4" />
                     </Button>
@@ -290,6 +291,7 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
                         window.open(getImageUrl(item), "_blank")
                       }}
                       className="h-8 w-8 p-0"
+                      type="button" // Fix: Add type button
                     >
                       <Eye className="h-4 w-4" />
                     </Button>
@@ -304,20 +306,11 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
                     }}
                     disabled={disabled}
                     className="h-8 w-8 p-0"
+                    type="button" // Fix: Add type button
                   >
                     <X className="h-4 w-4" />
                   </Button>
                 </div>
-              </div>
-
-              {/* File Info */}
-              <div className="p-2 bg-background">
-                <p className="text-xs font-medium truncate" title={getFileName(item)}>
-                  {getFileName(item)}
-                </p>
-                {typeof item !== "string" && (
-                  <p className="text-xs text-muted-foreground">{(item.size / 1024 / 1024).toFixed(2)} MB</p>
-                )}
               </div>
             </Card>
           ))}
@@ -352,6 +345,7 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
                       onClick={() => handleSetPrimary(index)}
                       disabled={disabled}
                       className="h-8 w-8 p-0"
+                      type="button" // Fix: Add type button
                     >
                       <Star className="h-4 w-4" />
                     </Button>
@@ -363,6 +357,7 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
                     onClick={() => handleRemove(index)}
                     disabled={disabled}
                     className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+                    type="button" // Fix: Add type button
                   >
                     <X className="h-4 w-4" />
                   </Button>
@@ -386,6 +381,7 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
               onClick={openFileDialog}
               disabled={disabled}
               className="h-7 bg-transparent"
+              type="button" // Fix: Add type button
             >
               <Upload className="h-3 w-3 mr-1" />
               Add More

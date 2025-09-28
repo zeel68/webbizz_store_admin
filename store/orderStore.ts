@@ -15,6 +15,7 @@ interface OrderState {
     status: string,
     trackingNumber?: string
   ) => Promise<void>;
+  fetchOrder: (orderId: string) => Promise<void>;
   clearError: () => void;
 }
 const session = await getSession();
@@ -117,7 +118,28 @@ export const useOrderStore = create<OrderState>()(
           throw error;
         }
       },
+      fetchOrder: async (orderId: string) => {
+        set({ loading: true, error: null });
+        try {
+          const response = await apiClient.get(
+            `/store-admin/orders/${orderId}`
+          ) as ApiResponse<any>;
 
+          if (response.success) {
+            return response.data;
+          } else {
+            set({ error: response.error || "Failed to fetch order", loading: false });
+            throw new Error(response.error || "Failed to fetch order");
+          }
+        } catch (error: any) {
+          console.error("Order fetch error:", error);
+          set({
+            error: error.message || "Failed to fetch order",
+            loading: false,
+          });
+          throw error;
+        }
+      },
       clearError: () => set({ error: null }),
     }),
     {

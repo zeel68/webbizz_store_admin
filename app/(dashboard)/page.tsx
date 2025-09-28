@@ -304,7 +304,7 @@ export default function DashboardPage() {
             initial="hidden"
             animate="show"
             variants={fadeIn as any}
-            className="space-y-6 p-6 bg-gradient-to-br from-gray-50/50 to-white min-h-screen"
+            className="space-y-6 p-6 bg-gradient-to-br  min-h-screen"
         >
             {/* Header Section */}
             <motion.div
@@ -352,7 +352,7 @@ export default function DashboardPage() {
             <motion.div variants={containerVariants} className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
                 <MetricCard
                     title="Total Revenue"
-                    value={loading ? "Loading..." : formatCurrency(analyticsData?.revenue.total || 0)}
+                    value={loading ? "Loading..." : formatCurrency(analyticsData?.overview.monthlyRevenue || 0)}
                     icon={DollarSign}
                     growth={
                         analyticsData?.revenue.growth
@@ -678,7 +678,7 @@ export default function DashboardPage() {
 
             {/* Quick Actions */}
             <motion.div variants={itemVariants as any}>
-                <Card className="shadow-lg border-0 bg-gradient-to-r from-white to-gray-50/50">
+                <Card className="shadow-lg border-0 bg-gradient-to-r bg-background">
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2">
                             <div className="p-2 bg-gray-100 rounded-lg">

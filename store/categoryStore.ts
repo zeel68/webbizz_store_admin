@@ -7,12 +7,14 @@ import { getSession } from "next-auth/react";
 
 interface CategoryState {
     categories: any[];
+    allCategories: any[];
     parentCategory: any | null;
     loading: boolean;
     error: string | null;
     lastFetch: number;
 
     fetchCategories: (force?: boolean) => Promise<void>;
+    fetchAllCategories: (force?: boolean) => Promise<void>;
     fetchParentCategory: () => Promise<void>;
     createCategory: (categoryData: any) => Promise<any>;
     updateCategory: (id: string, categoryData: any) => Promise<any>;
@@ -30,6 +32,7 @@ export const useCategoryStore = create<CategoryState>()(
     persist(
         (set, get) => ({
             categories: [],
+            allCategories: [],
             parentCategory: null,
             loading: false,
             error: null,
@@ -84,7 +87,43 @@ export const useCategoryStore = create<CategoryState>()(
                     });
                 }
             },
+            fetchAllCategories: async (force: boolean = false) => {
+                const now = Date.now();
+                set({ loading: true, error: null });
 
+                try {
+                    // Create API client without session dependency
+
+
+                    const response = await apiClient.get(
+                        "/store-admin/getStoreAllCategories",
+                    ) as any;
+
+
+                    if (response.success) {
+                        const data = response.data.data || response.data;
+                        set({
+                            allCategories: data,
+                            loading: false,
+                            lastFetch: now,
+                        });
+                        console.log("cat data", data);
+
+                    } else {
+                        set({
+                            allCategories: [],
+                            error: response.error || "Failed to fetch categories",
+                            loading: false,
+                        });
+                    }
+                } catch (error: any) {
+                    console.error("Category fetch error:", error);
+                    set({
+                        error: error.message || "Failed to fetch categories",
+                        loading: false,
+                    });
+                }
+            },
             fetchParentCategory: async () => {
                 // Implementation for fetching parent categories if needed
                 set({ loading: true, error: null });

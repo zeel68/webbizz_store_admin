@@ -31,26 +31,6 @@ import {
 import { useOrderStore } from "@/store/orderStore";
 import { OrdersTable } from "@/components/dashboard/orders/orders-table";
 
-interface Order {
-  _id: string;
-  order_number: string;
-  customer: {
-    name: string;
-    email: string;
-    phone: string;
-  };
-  total_amount: number;
-  status: string;
-  payment_status: string;
-  created_at: string;
-  updated_at: string;
-  user_id: {
-    name: string;
-    email: string;
-    phone: string;
-  };
-}
-
 interface FilterState {
   search: string;
   status: string;
@@ -249,10 +229,6 @@ export default function OrdersPage() {
           >
             <Filter className="mr-2 h-4 w-4" />
             {showFilters ? "Hide Filters" : "Show Filters"}
-          </Button>
-          <Button variant="outline" size="sm">
-            <Download className="mr-2 h-4 w-4" />
-            Export
           </Button>
         </div>
       </div>

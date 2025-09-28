@@ -68,13 +68,15 @@ export function useAnalytics(options: UseAnalyticsOptions = {}) {
       setLoading(true)
       setError(null)
 
-      const response = await apiClient.get(`/analytics/dashboard?range=${dateRange}`)
+      const response = await apiClient.get(`store-admin/dashboard?range=${dateRange}`)
 
       if (response.success) {
-        setData(response.data)
+        // console.log(response.data.data);
+
+        // setData(response.data.data)
         setLastUpdated(new Date())
       } else {
-        throw new Error(response.message || "Failed to fetch analytics")
+        // throw new Error(response.message || "Failed to fetch analytics")
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "An error occurred")

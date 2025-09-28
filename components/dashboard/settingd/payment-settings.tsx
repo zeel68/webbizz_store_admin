@@ -280,7 +280,7 @@ export function PaymentSettings({ storeConfig }: PaymentSettingsProps) {
                                 id="tax_rate"
                                 type="number"
                                 step="0.01"
-                                min="0"
+
                                 max="100"
                                 defaultValue={storeConfig?.tax_settings?.tax_rate || 0}
                                 placeholder="8.25"

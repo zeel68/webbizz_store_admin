@@ -14,7 +14,7 @@ interface iAttributeOption {
 
 interface iStoreCategoryConfig {
     filters: iFilterOption[];
-    attributes: iAttributeOption[];
+    attributes: iFilterOption[];
 }
 
 interface iCategory {
@@ -61,5 +61,5 @@ interface iCategoryFormData {
     is_primary: boolean;
     image_url?: string;
     filters: iFilterOption[];
-    attributes: iAttributeOption[];
+    attributes: iFilterOption[];
 }

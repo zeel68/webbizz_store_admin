@@ -1,7 +1,7 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
-import { useRouter } from "next/navigation"
+import { useState, useEffect, useCallback, Fragment } from "react"
+import { useRouter, useParams } from "next/navigation"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
@@ -15,15 +15,21 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
-import { ScrollArea } from "@/components/ui/scroll-area"
 import { toast } from "sonner"
-import { Plus, X, Trash2, Save, Package, Tag, Settings, DollarSign, Truck, Search, BarChart3, ImageIcon, Info } from 'lucide-react'
+import {
+    Plus, X, Trash2, Save, Package, Tag, Settings, DollarSign, Truck, Search,
+    BarChart3, ImageIcon, Info, ChevronDown, ChevronUp,
+    Table
+} from 'lucide-react'
 import { useProductStore } from "@/store/productStore"
 import { useCategoryStore } from "@/store/categoryStore"
 import ImageUpload from "@/components/shared/image-upload"
 import { RichTextEditor } from "@/components/ui/rich-text-editor"
-
-// Define interfaces for type safety
+import { Checkbox } from "@/components/ui/checkbox"
+import { Skeleton } from "@/components/ui/skeleton"
+import { ScrollArea } from "@/components/ui/scroll-area"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import { v4 } from "uuid";
 interface iProductFormData {
     name: string
     description?: string
@@ -31,7 +37,7 @@ interface iProductFormData {
     price: number
     compare_price?: number
     cost_price?: number
-    store_category_id?: string
+    category?: string
     brand?: string
     sku?: string
     stock: {
@@ -60,17 +66,40 @@ interface iProductFormData {
     is_active: boolean
     is_featured: boolean
     visibility: "public" | "private" | "hidden"
-    images?: string[] // Add images property
+    images?: string[]
+}
+
+interface iVariantSize {
+    id: string;
+    size: string;
+    stock: number;
+    priceModifier?: number;
+    sku: string;
+    attributes: Record<string, any>;
+}
+
+interface iProductVariant {
+    id: string;
+    color: string;
+    images: (File | string)[];
+    primaryIndex: number;
+    sizes: iVariantSize[];
+}
+
+interface CategoryFilter {
+    name: string
+    type: "text" | "select" | "multiselect" | "number"
+    options: string[]
+    is_required: boolean
 }
 
 const productSchema = z.object({
     name: z.string().min(1, "Product name is required"),
     description: z.string().optional(),
-    // slug: z.string().min(1, "slug is required"),
-    price: z.number().min(0, "Price must be positive"),
+    price: z.number().min(1, "Price must be positive"),
     compare_price: z.number().optional(),
     cost_price: z.number().optional(),
-    store_category_id: z.string().optional(),
+    category: z.string().min(1, "Please select any category"),
     brand: z.string().optional(),
     sku: z.string().optional(),
     stock: z.object({
@@ -81,7 +110,6 @@ const productSchema = z.object({
     }),
     attributes: z.record(z.string(), z.any()).optional(),
     specifications: z.record(z.string(), z.any()).optional(),
-
     tags: z.array(z.string()).optional(),
     seo: z.object({
         title: z.string().optional(),
@@ -97,70 +125,126 @@ const productSchema = z.object({
         }).optional(),
     }).optional(),
     variants: z.array(z.object({
-        name: z.string(),
-        options: z.array(z.string()),
-        price_modifier: z.number().optional(),
-        stock_quantity: z.number().optional(),
-        sku: z.string().optional(),
+        id: z.string(),
+        color: z.string(),
+        images: z.array(z.any()).optional(),
+        primaryIndex: z.number(),
+        sizes: z.array(z.object({
+            id: z.string(),
+            size: z.string(),
+            stock: z.number(),
+            priceModifier: z.number(),
+            sku: z.string(),
+            attributes: z.record(z.string(), z.any()),
+        }))
     })).optional(),
     is_active: z.boolean(),
     is_featured: z.boolean(),
     visibility: z.enum(["public", "private", "hidden"]),
-    images: z.array(z.string()).optional(), // Add to schema
+    images: z.array(z.string()).optional(),
 })
 
+const useProductDefaults = () => {
+    const [defaultSpecifications, setDefaultSpecifications] = useState<Record<string, string>>({})
+    const [defaultAttributes, setDefaultAttributes] = useState<Record<string, any>>({})
+    const [defaultTags, setDefaultTags] = useState<string[]>([])
+    const [defaultSeoKeywords, setDefaultSeoKeywords] = useState<string[]>([])
 
-interface iProductVariant {
-    name: string
-    options: string[]
-    price_modifier: number
-    stock_quantity: number
-    sku: string
+    useEffect(() => {
+        setDefaultSpecifications({
+            "Material": "Cotton",
+            "Size Guide": "See product description",
+            "Care Instructions": "Machine wash cold"
+        })
+        setDefaultAttributes({
+            "Fabric": "100% Cotton",
+            "Pattern": "Solid"
+        })
+        setDefaultTags(["new-arrival", "summer-collection"])
+        setDefaultSeoKeywords(["fashion", "clothing", "trendy"])
+    }, [])
+
+    const applyDefaults = useCallback((form: any) => {
+        form.setValue("specifications", defaultSpecifications)
+        form.setValue("attributes", defaultAttributes)
+        form.setValue("tags", defaultTags)
+        form.setValue("seo.keywords", defaultSeoKeywords)
+    }, [defaultSpecifications, defaultAttributes, defaultTags, defaultSeoKeywords])
+
+    return {
+        defaultSpecifications,
+        defaultAttributes,
+        defaultTags,
+        defaultSeoKeywords,
+        applyDefaults
+    }
 }
 
+function normalizeFilters(raw: any): CategoryFilter[] {
+    if (!raw) return []
+    if (Array.isArray(raw)) {
+        return raw.map(item => {
+            if (!item) return { name: "", type: "text", options: [], is_required: false }
+            const name = item.name ?? item.key ?? ""
+            const type = item.type ?? "text"
+            const options = Array.isArray(item.options) ? item.options : []
+            const is_required = !!item.is_required
+            return { name, type, options, is_required }
+        })
+    }
+    if (typeof raw === "object") {
+        return Object.entries(raw).map(([key, val]) => {
+            if (val == null) return { name: key, type: "text", options: [], is_required: false }
+            if (typeof val === "string") {
+                return { name: key, type: "text", options: [], is_required: false }
+            }
+            const type = val.type ?? "text"
+            const options = Array.isArray(val.options) ? val.options : []
+            const is_required = !!val.is_required
+            const name = val.name ?? key
+            return { name, type, options, is_required }
+        })
+    }
+    return []
+}
 
-export default function AddProductPage() {
+export default function ProductPage() {
     const router = useRouter()
-    const { createProduct, loading } = useProductStore()
-    const { categories, fetchCategories } = useCategoryStore()
+    const params = useParams()
+    const productId = params.id as string | undefined
+    const isEdit = !!productId
+
+    const { createProduct, updateProduct, loading } = useProductStore()
+    const { categories, allCategories, fetchCategories, fetchAllCategories, loading: categoriesLoading } = useCategoryStore()
+    const { applyDefaults } = useProductDefaults()
 
     const [activeTab, setActiveTab] = useState("basic")
-    const [selectedImages, setSelectedImages] = useState<File[]>([])
-    const [primaryImageIndex, setPrimaryImageIndex] = useState(0)
-
-    // Form state for complex fields
+    const [colorVariants, setColorVariants] = useState<iProductVariant[]>([])
     const [tags, setTags] = useState<string[]>([])
     const [newTag, setNewTag] = useState("")
-    const [attributes, setAttributes] = useState<Record<string, any>>({})
-    const [newAttribute, setNewAttribute] = useState({ key: "", value: "" })
-    const [specifications, setSpecifications] = useState<Record<string, any>>({})
-    const [newSpecification, setNewSpecification] = useState({ key: "", value: "" })
-    const [variants, setVariants] = useState<iProductVariant[]>([])
-    const [newVariant, setNewVariant] = useState<iProductVariant>({
-        name: "",
-        options: [],
-        price_modifier: 0,
-        stock_quantity: 0,
-        sku: "",
-    })
-    const [newVariantOption, setNewVariantOption] = useState("")
     const [seoKeywords, setSeoKeywords] = useState<string[]>([])
     const [newKeyword, setNewKeyword] = useState("")
+    const [specifications, setSpecifications] = useState<Record<string, any>>({})
+    const [newSpecification, setNewSpecification] = useState({ key: "", value: "" })
+    const [isApplyingDefaults, setIsApplyingDefaults] = useState(false)
+    const [expandedSizeRows, setExpandedSizeRows] = useState<Record<string, boolean>>({})
+    const [sizeOptions, setSizeOptions] = useState<string[]>(["S", "M", "L", "XL", "XXL"])
+    const [newSizeOption, setNewSizeOption] = useState("")
 
     const form = useForm<iProductFormData>({
         resolver: zodResolver(productSchema as any),
         defaultValues: {
-            name: "qw",
-            description: "qwqw",
+            name: "",
+            description: "",
             slug: "",
             price: 1,
-            compare_price: 2,
-            cost_price: 1,
-            store_category_id: "",
+            compare_price: 0,
+            cost_price: 0,
+            category: "",
             brand: "",
             sku: "",
             stock: {
-                quantity: 1,
+                quantity: 0,
                 track_inventory: true,
                 low_stock_threshold: 10,
                 allow_backorder: false,
@@ -174,75 +258,79 @@ export default function AddProductPage() {
                 keywords: [],
             },
             shipping: {
-                weight: 1,
+                weight: 0,
                 dimensions: undefined,
             },
             variants: [],
             is_active: true,
             is_featured: false,
             visibility: "public",
-            images: [], // Add default value
+            images: [],
         },
     })
 
-    // Load categories on mount
+    const selectedCategoryId = form.watch("category")
+    const selectedCategory = allCategories.find(cat => cat._id === selectedCategoryId)
+    const categoryAttributes = normalizeFilters(selectedCategory?.config?.filters)
+
     useEffect(() => {
-        if (categories.length === 0) {
-            fetchCategories(true)
+        if (selectedCategory && colorVariants.length > 0) {
+            const filters = normalizeFilters(selectedCategory.config?.filters)
+            const updatedVariants = colorVariants.map(variant => {
+                const updatedSizes = (variant.sizes || []).map(size => {
+                    const initialAttributes: Record<string, any> = { ...(size.attributes || {}) }
+                    filters.forEach((attr) => {
+                        if (!(attr.name in initialAttributes)) {
+                            if (attr.type === "multiselect") {
+                                initialAttributes[attr.name] = []
+                            } else {
+                                initialAttributes[attr.name] = ""
+                            }
+                        }
+                    })
+                    return {
+                        ...size,
+                        attributes: initialAttributes
+                    }
+                })
+                return {
+                    ...variant,
+                    sizes: updatedSizes
+                }
+            })
+            setColorVariants(updatedVariants)
         }
-    }, [categories.length, fetchCategories])
+    }, [selectedCategoryId])
 
-    const handleImageSelect = (files: File[]) => {
-        setSelectedImages([...selectedImages, ...files])
-    }
-
-    const handleImageRemove = (index: number) => {
-        setSelectedImages(prev => prev.filter((_, i) => i !== index))
-        if (primaryImageIndex === index) {
-            setPrimaryImageIndex(0)
-        } else if (index < primaryImageIndex) {
-            setPrimaryImageIndex(prev => prev - 1)
+    useEffect(() => {
+        if (allCategories.length === 0) {
+            fetchAllCategories(true)
         }
+    }, [allCategories.length, fetchAllCategories])
+
+
+
+    const handleApplyDefaults = () => {
+        setIsApplyingDefaults(true)
+        applyDefaults(form)
+        setTags(form.getValues("tags") || [])
+        setSeoKeywords(form.getValues("seo.keywords") || [])
+        setSpecifications(form.getValues("specifications") || {})
+        setIsApplyingDefaults(false)
+        toast.success("Default values applied")
     }
 
-    const handleSetPrimaryImage = (index: number) => {
-        setPrimaryImageIndex(index)
-    }
-
-    // Tag management
     const addTag = () => {
         if (newTag.trim() && !tags.includes(newTag.trim())) {
-            const updatedTags = [...tags, newTag.trim()]
-            setTags(updatedTags)
+            setTags([...tags, newTag.trim()])
             setNewTag("")
         }
     }
 
     const removeTag = (tagToRemove: string) => {
-        const updatedTags = tags.filter(tag => tag !== tagToRemove)
-        setTags(updatedTags)
+        setTags(tags.filter(tag => tag !== tagToRemove))
     }
 
-    // Attribute management
-    const addAttribute = () => {
-        if (newAttribute.key.trim() && newAttribute.value.trim()) {
-            setAttributes(prev => ({
-                ...prev,
-                [newAttribute.key.trim()]: newAttribute.value.trim()
-            }))
-            setNewAttribute({ key: "", value: "" })
-        }
-    }
-
-    const removeAttribute = (key: string) => {
-        setAttributes(prev => {
-            const updated = { ...prev }
-            delete updated[key]
-            return updated
-        })
-    }
-
-    // Specification management
     const addSpecification = () => {
         if (newSpecification.key.trim() && newSpecification.value.trim()) {
             setSpecifications(prev => ({
@@ -261,54 +349,193 @@ export default function AddProductPage() {
         })
     }
 
-    // Variant management
-    const addVariantOption = () => {
-        if (newVariantOption.trim() && !newVariant.options.includes(newVariantOption.trim())) {
-            setNewVariant(prev => ({
-                ...prev,
-                options: [...prev.options, newVariantOption.trim()]
-            }))
-            setNewVariantOption("")
+    const addColorVariant = () => {
+        const newVariant: iProductVariant = {
+            id: v4(),
+            color: "",
+            images: [],
+            primaryIndex: 0,
+            sizes: [],
         }
+        setColorVariants([...colorVariants, newVariant])
     }
 
-    const removeVariantOption = (option: string) => {
-        setNewVariant(prev => ({
-            ...prev,
-            options: prev.options.filter(opt => opt !== option)
-        }))
+    const removeColorVariant = (id: string) => {
+        console.log(id);
+
+        setColorVariants(colorVariants.filter(v => v.id !== id))
     }
 
-    const addVariant = () => {
-        if (newVariant.name.trim() && newVariant.options.length > 0) {
-            setVariants(prev => [...prev, { ...newVariant }])
-            setNewVariant({
-                name: "",
-                options: [],
-                price_modifier: 0,
-                stock_quantity: 0,
-                sku: "",
+    const updateColorVariant = (id: string, updates: Partial<iProductVariant>) => {
+        setColorVariants(
+            colorVariants.map(variant =>
+                variant.id === id ? { ...variant, ...updates } : variant
+            )
+        )
+    }
+
+    const toggleSizeSelection = (variantId: string, sizeLabel: string) => {
+        setColorVariants(prev =>
+            prev.map(variant => {
+                if (variant.id !== variantId) return variant
+                const exists = variant.sizes.find(s => s.size === sizeLabel)
+                if (exists) {
+                    return {
+                        ...variant,
+                        sizes: variant.sizes.filter(s => s.size !== sizeLabel)
+                    }
+                } else {
+                    const newSize: iVariantSize = {
+                        id: v4(),
+                        size: sizeLabel,
+                        stock: 0,
+                        priceModifier: null,
+                        sku: "",
+                        attributes: {}
+                    }
+                    const filters = normalizeFilters(selectedCategory?.config?.filters)
+                    if (filters.length > 0) {
+                        const initialAttributes: Record<string, any> = {}
+                        filters.forEach(attr => {
+                            if (attr.type === "multiselect") initialAttributes[attr.name] = []
+                            else initialAttributes[attr.name] = ""
+                        })
+                        newSize.attributes = initialAttributes
+                    }
+                    return {
+                        ...variant,
+                        sizes: [...variant.sizes, newSize]
+                    }
+                }
             })
+        )
+    }
+
+    const addNewSizeOption = () => {
+        const label = newSizeOption.trim()
+        if (!label) return
+        if (!sizeOptions.includes(label)) {
+            setSizeOptions(prev => [...prev, label])
+        }
+        setNewSizeOption("")
+    }
+
+    const removeSizeFromVariant = (variantId: string, sizeId: string) => {
+        setColorVariants(
+            colorVariants.map(variant =>
+                variant.id === variantId
+                    ? {
+                        ...variant,
+                        sizes: variant.sizes.filter(s => s.id !== sizeId)
+                    }
+                    : variant
+            )
+        )
+        const key = `${variantId}_${sizeId}`
+        setExpandedSizeRows(prev => {
+            const copy = { ...prev }
+            delete copy[key]
+            return copy
+        })
+    }
+
+    const updateSizeInVariant = (
+        variantId: string,
+        sizeId: string,
+        updates: Partial<iVariantSize>
+    ) => {
+        setColorVariants(
+            colorVariants.map(variant => {
+                if (variant.id === variantId) {
+                    return {
+                        ...variant,
+                        sizes: variant.sizes.map(size =>
+                            size.id === sizeId ? { ...size, ...updates } : size
+                        )
+                    }
+                }
+                return variant
+            })
+        )
+    }
+
+    const handleImageSelect = (id: string, files: File[]) => {
+        const variant = colorVariants.find(v => v.id === id)
+        if (variant) {
+            updateColorVariant(id, { images: [...variant.images, ...files] })
         }
     }
 
-    const removeVariant = (index: number) => {
-        setVariants(prev => prev.filter((_, i) => i !== index))
+    const handleImageRemove = (id: string, index: number) => {
+        const variant = colorVariants.find(v => v.id === id)
+        if (!variant) return
+
+        const newImages = variant.images.filter((_, i) => i !== index)
+        let newPrimaryIndex = variant.primaryIndex
+
+        if (index === variant.primaryIndex) {
+            newPrimaryIndex = 0
+        } else if (index < variant.primaryIndex) {
+            newPrimaryIndex = variant.primaryIndex - 1
+        }
+
+        updateColorVariant(id, {
+            images: newImages,
+            primaryIndex: newPrimaryIndex
+        })
     }
 
-    // SEO keyword management
+    const handleSetPrimaryImage = (id: string, index: number) => {
+        updateColorVariant(id, { primaryIndex: index })
+    }
+
+    const updateSizeAttribute = (
+        variantId: string,
+        sizeId: string,
+        attributeName: string,
+        value: any
+    ) => {
+        setColorVariants(
+            colorVariants.map(variant => {
+                if (variant.id === variantId) {
+                    return {
+                        ...variant,
+                        sizes: variant.sizes.map(size => {
+                            if (size.id === sizeId) {
+                                return {
+                                    ...size,
+                                    attributes: {
+                                        ...size.attributes,
+                                        [attributeName]: value
+                                    }
+                                }
+                            }
+                            return size
+                        })
+                    }
+                }
+                return variant
+            })
+        )
+    }
+
+    const toggleExpandRow = (variantId: string, sizeId: string) => {
+        const key = `${variantId}_${sizeId}`
+        setExpandedSizeRows(prev => ({ ...prev, [key]: !prev[key] }))
+    }
+
     const addKeyword = () => {
         if (newKeyword.trim() && !seoKeywords.includes(newKeyword.trim())) {
-            setSeoKeywords(prev => [...prev, newKeyword.trim()])
+            setSeoKeywords([...seoKeywords, newKeyword.trim()])
             setNewKeyword("")
         }
     }
 
     const removeKeyword = (keyword: string) => {
-        setSeoKeywords(prev => prev.filter(k => k !== keyword))
+        setSeoKeywords(seoKeywords.filter(k => k !== keyword))
     }
 
-    const uploadMultipleToCloudinary = async (files: File[]): Promise<string[]> => {
+    const uploadToCloudinary = async (file: File): Promise<string> => {
         const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
         const uploadPreset = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || "BizzWeb";
 
@@ -318,156 +545,241 @@ export default function AddProductPage() {
 
         const uploadUrl = `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`;
 
-        const uploadPromises = files.map(async (file) => {
-            const formData = new FormData();
-            formData.append("file", file);
-            formData.append("upload_preset", uploadPreset);
-            formData.append("folder", "ecommerce_uploads/products");
+        const formData = new FormData();
+        formData.append("file", file);
+        formData.append("upload_preset", uploadPreset);
+        formData.append("folder", "ecommerce_uploads/products");
 
-            const res = await fetch(uploadUrl, {
-                method: "POST",
-                body: formData,
-            });
-
-            if (!res.ok) {
-                const err = await res.json();
-                throw new Error(err.error?.message || "Image upload failed");
-            }
-
-            const data = await res.json();
-            return data.secure_url;
+        const res = await fetch(uploadUrl, {
+            method: "POST",
+            body: formData,
         });
 
-        return await Promise.all(uploadPromises);
+        if (!res.ok) {
+            const err = await res.json();
+            throw new Error(err.error?.message || "Image upload failed");
+        }
+
+        const data = await res.json();
+        return data.secure_url;
     };
 
-    const onSubmit = async (data: any) => {
-
-
+    const onSubmit = async (data: iProductFormData) => {
         try {
-            toast.info("Uploading images...")
-            const urls = await uploadMultipleToCloudinary(selectedImages)
+            const variantUploadPromises = colorVariants.map(async variant => {
+                const imageUrls = await Promise.all(
+                    variant.images.map(async (img) => {
+                        if (img instanceof File) {
+                            return await uploadToCloudinary(img);
+                        }
+                        return img as string;
+                    })
+                );
+                const sizes = variant.sizes.map(size => ({
+                    ...size,
+                    attributes: size.attributes
+                }));
+                return {
+                    ...variant,
+                    images: imageUrls,
+                    sizes
+                };
+            })
 
-            data.slug = data.name.toLowerCase().replace(" ", "-")
-            // Combine form data with complex state
-            const productData: iProductFormData = {
-                ...data,
-                tags,
-                attributes,
-                specifications,
-                variants,
-                images: urls,
-                seo: {
-                    ...data.seo,
-                    keywords: seoKeywords,
-                },
+            const variantsWithImages = await Promise.all(variantUploadPromises)
+
+            data.slug = data.name.toLowerCase().replace(/\s+/g, "-")
+            data.variants = variantsWithImages
+            data.tags = tags
+            data.specifications = specifications
+            data.seo = {
+                ...data.seo,
+                keywords: seoKeywords,
             }
-            console.log(productData);
+            console.log(data);
 
-            await createProduct(productData as any)
+            // if (isEdit && productId) {
+            //     await updateProduct(productId, data)
+            //     toast.success("Product updated successfully")
+            // } else {
+            await createProduct(data as any)
             toast.success("Product created successfully")
+            // }
             router.push("/products")
         } catch (error: any) {
-            toast.error(error.message || "Failed to create product")
+            toast.error(error.message || "Failed to save product")
+        }
+    }
+
+    const renderAttributeInput = (variantId: string, sizeId: string, attribute: CategoryFilter) => {
+        const variant = colorVariants.find(v => v.id === variantId)
+        if (!variant) return null
+        const size = variant.sizes.find(s => s.id === sizeId)
+        if (!size) return null
+        const value = size.attributes[attribute.name]
+
+        switch (attribute.type) {
+            case "text":
+                return (
+                    <Input
+                        className="h-8 text-sm"
+                        value={value || ""}
+                        onChange={(e) => updateSizeAttribute(variantId, sizeId, attribute.name, e.target.value)}
+                        placeholder={`Enter ${attribute.name}`}
+                    />
+                )
+            case "number":
+                return (
+                    <Input
+                        className="h-8 text-sm"
+                        type="number"
+                        value={value || ""}
+                        onChange={(e) => updateSizeAttribute(variantId, sizeId, attribute.name, Number(e.target.value))}
+                        placeholder={`Enter ${attribute.name}`}
+                    />
+                )
+            case "select":
+                return (
+                    <Select
+                        value={value || ""}
+                        onValueChange={(val) => updateSizeAttribute(variantId, sizeId, attribute.name, val)}
+                    >
+                        <SelectTrigger className="h-8 text-sm">
+                            <SelectValue placeholder={`Select ${attribute.name}`} />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {attribute.options.map((option) => (
+                                <SelectItem key={option} value={option}>
+                                    {option}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                )
+            case "multiselect":
+                {
+                    const currentValues = Array.isArray(value) ? value : []
+                    return (
+                        <div className="space-y-1">
+                            {attribute.options.map((option) => (
+                                <div key={option} className="flex items-center space-x-2">
+                                    <Checkbox
+                                        id={`${variantId}-${sizeId}-${attribute.name}-${option}`}
+                                        checked={currentValues.includes(option)}
+                                        onCheckedChange={(checked) => {
+                                            const newValues = checked
+                                                ? [...currentValues, option]
+                                                : currentValues.filter((v) => v !== option)
+                                            updateSizeAttribute(variantId, sizeId, attribute.name, newValues)
+                                        }}
+                                    />
+                                    <label
+                                        className="text-sm truncate"
+                                        htmlFor={`${variantId}-${sizeId}-${attribute.name}-${option}`}
+                                    >
+                                        {option}
+                                    </label>
+                                </div>
+                            ))}
+                        </div>
+                    )
+                }
+            default:
+                return null
         }
     }
 
     const renderBasicTab = () => (
         <div className="space-y-6">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <Card>
-                    <CardHeader>
+            <Card>
+                <CardHeader>
+                    <div className="flex justify-between items-center">
                         <CardTitle className="flex items-center gap-2">
                             <Package className="h-5 w-5" />
                             Product Details
                         </CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                        <div className="space-y-2">
-                            <Label htmlFor="name">Product Name *</Label>
-                            <Input
-                                id="name"
-                                {...form.register("name")}
-                                placeholder="Enter product name"
-                            />
-                            {form.formState.errors.name && (
-                                <p className="text-sm text-destructive">{form.formState.errors.name.message}</p>
-                            )}
-                        </div>
+                        {/* <Button
+                            type="button"
+                            variant="secondary"
+                            onClick={handleApplyDefaults}
+                            disabled={isApplyingDefaults}
+                        >
+                            Apply Defaults
+                        </Button> */}
+                    </div>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                    <div className="space-y-2">
+                        <Label htmlFor="name">Product Name *</Label>
+                        <Input
+                            id="name"
+                            {...form.register("name")}
+                            placeholder="Enter product name"
+                        />
+                        {form.formState.errors.name && (
+                            <p className="text-sm text-destructive">{form.formState.errors.name.message}</p>
+                        )}
+                    </div>
 
-                        <div className="space-y-2">
-                            <Label htmlFor="category">Category *</Label>
-                            <Select
-                                value={form.watch("store_category_id")}
-                                onValueChange={(value) => form.setValue("store_category_id", value)}
-                            >
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Select category" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {categories.map((category) => (
+                    <div className="space-y-2">
+                        <Label htmlFor="category">Category *</Label>
+                        <Select
+                            value={form.watch("category")}
+                            onValueChange={(value) => form.setValue("category", value)}
+                        >
+                            <SelectTrigger>
+                                <SelectValue placeholder="Select category" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {categoriesLoading ? (
+                                    Array.from({ length: 5 }).map((_, i) => (
+                                        <SelectItem key={i} value={`loading-${i}`} disabled>
+                                            <Skeleton className="h-4 w-32" />
+                                        </SelectItem>
+                                    ))
+                                ) : (
+                                    allCategories.map((category) => (
                                         <SelectItem key={category._id} value={category._id}>
                                             {category.display_name}
                                         </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                            {form.formState.errors.store_category_id && (
-                                <p className="text-sm text-destructive">{form.formState.errors.store_category_id.message}</p>
-                            )}
-                        </div>
+                                    ))
+                                )}
+                            </SelectContent>
+                        </Select>
+                        {form.formState.errors.category && (
+                            <p className="text-sm text-destructive">{form.formState.errors.category.message}</p>
+                        )}
+                    </div>
 
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                                <Label htmlFor="brand">Brand</Label>
-                                <Input
-                                    id="brand"
-                                    {...form.register("brand")}
-                                    placeholder="Enter brand name"
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="sku">SKU</Label>
-                                <Input
-                                    id="sku"
-                                    {...form.register("sku")}
-                                    placeholder="Enter product SKU"
-                                />
-                            </div>
-                        </div>
-
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="space-y-2">
-                            <RichTextEditor
-                                label="Description"
-                                value={form.watch("description") || ""}
-                                onChange={(value) => form.setValue("description", value)}
-                                placeholder="Describe your product in detail..."
+                            <Label htmlFor="brand">Brand</Label>
+                            <Input
+                                id="brand"
+                                {...form.register("brand")}
+                                placeholder="Enter brand name"
                             />
                         </div>
-                    </CardContent>
-                </Card>
+                        <div className="space-y-2">
+                            <Label htmlFor="sku">Product SKU</Label>
+                            <Input
+                                id="sku"
+                                {...form.register("sku")}
+                                placeholder="Enter product SKU"
+                            />
+                        </div>
+                    </div>
 
-                <Card>
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
-                            <ImageIcon className="h-5 w-5" />
-                            Product Images
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <ImageUpload
-                            onSelectFiles={handleImageSelect}
-                            onRemove={handleImageRemove}
-                            onSetPrimary={handleSetPrimaryImage}
-                            value={selectedImages}
-                            primaryIndex={primaryImageIndex}
-                            multiple={true}
-                            showPreview={true}
-                            showLocalPreview={true}
+                    <div className="space-y-2">
+                        <RichTextEditor
+                            label="Description"
+                            value={form.watch("description") || ""}
+                            onChange={(value) => form.setValue("description", value)}
+                            placeholder="Describe your product in detail..."
                         />
-                    </CardContent>
-                </Card>
-            </div>
+                    </div>
+                </CardContent>
+            </Card>
 
             <Card>
                 <CardHeader>
@@ -491,10 +803,10 @@ export default function AddProductPage() {
                     {tags.length > 0 && (
                         <div className="flex flex-wrap gap-2">
                             {tags.map((tag, index) => (
-                                <Badge key={index} variant="secondary" className="flex items-center gap-1">
-                                    {tag}
+                                <Badge key={index} variant="secondary" className="flex items-center gap-1 py-1">
+                                    <span className="max-w-[120px] truncate">{tag}</span>
                                     <X
-                                        className="h-3 w-3 cursor-pointer"
+                                        className="h-3 w-3 cursor-pointer text-muted-foreground hover:text-foreground"
                                         onClick={() => removeTag(tag)}
                                     />
                                 </Badge>
@@ -504,6 +816,502 @@ export default function AddProductPage() {
                 </CardContent>
             </Card>
         </div>
+    )
+
+    const renderColorVariantsTab = () => (
+        <div className="space-y-6">
+            <Card>
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                        <ImageIcon className="h-5 w-5" />
+                        Color & Size Variants
+                    </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                        <Button
+                            type="button"
+                            onClick={addColorVariant}
+                            className="w-full md:w-auto"
+                        >
+                            <Plus className="h-4 w-4 mr-2" />
+                            Add Color Variant
+                        </Button>
+
+                        <div className="flex flex-col gap-2 w-full md:w-auto">
+                            <Label className="text-sm">Global Sizes</Label>
+                            <div className="flex items-center gap-2">
+                                <div className="flex flex-wrap gap-1">
+                                    {sizeOptions.map(opt => (
+                                        <Badge key={opt} variant="outline" className="px-2 py-1">
+                                            {opt}
+                                        </Badge>
+                                    ))}
+                                </div>
+                                <div className="flex items-center gap-2 flex-1 min-w-[200px]">
+                                    <Input
+                                        placeholder="Add custom size"
+                                        value={newSizeOption}
+                                        onChange={(e) => setNewSizeOption(e.target.value)}
+                                        onKeyPress={(e) => e.key === "Enter" && (e.preventDefault(), addNewSizeOption())}
+                                        className="flex-1"
+                                    />
+                                    <Button
+                                        type="button"
+                                        onClick={addNewSizeOption}
+                                        variant="outline"
+                                        size="icon"
+                                    >
+                                        <Plus className="h-4 w-4" />
+                                    </Button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="space-y-8">
+                        {colorVariants.length === 0 ? (
+                            <div className="text-center py-8 border rounded-lg bg-muted/20">
+                                <p className="text-muted-foreground mb-4">No color variants added yet</p>
+                                <Button
+                                    type="button"
+                                    onClick={addColorVariant}
+                                    variant="secondary"
+                                >
+                                    Add Your First Color Variant
+                                </Button>
+                            </div>
+                        ) : (
+                            colorVariants.map((variant, index) => (
+                                <Card key={variant.id} className="border rounded-lg overflow-hidden">
+                                    <CardHeader className="bg-muted/40 p-4">
+                                        <div className="flex justify-between items-center">
+                                            <div className="flex items-center gap-4">
+                                                <span className="font-medium">{index + 1}. <b>{variant.color}</b> Color Variant </span>
+                                                {/* {variant.color && (
+                                                    <Badge variant="secondary">{variant.color}</Badge>
+                                                )} */}
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                <Button
+                                                    type="button"
+                                                    variant="destructive"
+                                                    size="sm"
+                                                    onClick={() => removeColorVariant(variant.id)}
+                                                    className="text-destructive-foreground"
+                                                >
+                                                    <Trash2 className="h-4 w-4 mr-1" />
+                                                    Remove
+                                                </Button>
+                                            </div>
+                                        </div>
+                                    </CardHeader>
+                                    <CardContent className="p-4 space-y-6">
+                                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                            <div className="space-y-4">
+                                                <div className="space-y-2">
+                                                    <Label>Color Name *</Label>
+                                                    <Input
+                                                        value={variant.color}
+                                                        onChange={(e) => updateColorVariant(variant.id, { color: e.target.value })}
+                                                        placeholder="e.g., Red, Blue, Black"
+                                                    />
+                                                </div>
+
+                                                <div>
+                                                    <Label>Variant Images</Label>
+                                                    <ImageUpload
+                                                        onSelectFiles={(files) => handleImageSelect(variant.id, files)}
+                                                        onRemove={(index) => handleImageRemove(variant.id, index)}
+                                                        onSetPrimary={(index) => handleSetPrimaryImage(variant.id, index)}
+                                                        value={variant.images}
+                                                        primaryIndex={variant.primaryIndex}
+                                                        multiple={true}
+                                                        showPreview={true}
+                                                        showLocalPreview={true}
+                                                    />
+                                                </div>
+                                            </div>
+
+                                            <div className="space-y-4">
+                                                <div className="flex items-center justify-between">
+                                                    <Label>Choose Sizes</Label>
+                                                    <p className="text-sm text-muted-foreground">Select sizes to show</p>
+                                                </div>
+
+                                                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                                                    {sizeOptions.map(opt => {
+                                                        const checked = !!variant.sizes.find(s => s.size === opt)
+                                                        return (
+                                                            <label
+                                                                key={opt}
+                                                                className={`flex items-center gap-2 p-2 border rounded transition-colors ${checked ? 'border-primary bg-primary/10' : 'hover:bg-muted/50'
+                                                                    }`}
+                                                            >
+                                                                <Checkbox
+                                                                    id={`${variant.id}-size-${opt}`}
+                                                                    checked={checked}
+                                                                    onCheckedChange={() => toggleSizeSelection(variant.id, opt)}
+                                                                />
+                                                                <span className="text-sm">{opt}</span>
+                                                            </label>
+                                                        )
+                                                    })}
+                                                </div>
+
+                                                <div className="mt-2">
+                                                    <Label className="text-sm">Custom size for this variant</Label>
+                                                    <div className="flex gap-2">
+                                                        <Input
+                                                            placeholder="Enter size and press Enter"
+                                                            onKeyPress={(e) => {
+                                                                if (e.key === "Enter") {
+                                                                    e.preventDefault()
+                                                                    const txt = (e.target as HTMLInputElement).value.trim()
+                                                                    if (txt) {
+                                                                        if (!sizeOptions.includes(txt)) {
+                                                                            setSizeOptions(prev => [...prev, txt])
+                                                                        }
+                                                                        toggleSizeSelection(variant.id, txt)
+                                                                            ; (e.target as HTMLInputElement).value = ""
+                                                                    }
+                                                                }
+                                                            }}
+                                                        />
+                                                        <Button
+                                                            type="button"
+                                                            onClick={() => toast("Press Enter in the input to add the custom size.")}
+                                                            variant="outline"
+                                                            size="icon"
+                                                        >
+                                                            <Plus className="h-4 w-4" />
+                                                        </Button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* <div>
+                                            <Label>Size Matrix</Label>
+                                            {variant.sizes.length === 0 ? (
+                                                <div className="text-sm text-muted-foreground p-4 border rounded">No sizes selected for this color.</div>
+                                            ) : (
+                                                <div className="mt-2 border rounded-lg overflow-x-auto">
+                                                    <table className="w-full min-w-[800px]">
+                                                        <thead>
+                                                            <tr className="border-b">
+                                                                <th className="text-left p-2 w-[100px]">Size</th>
+                                                                <th className="text-left p-2 w-[150px]">SKU</th>
+                                                                <th className="text-left p-2 w-[120px]">Price Modifier</th>
+                                                                <th className="text-left p-2 w-[120px]">Final Price</th>
+                                                                <th className="text-left p-2 w-[100px]">Stock Qty</th>
+                                                                {categoryAttributes.map((attr) => (
+                                                                    <th
+                                                                        key={attr.name}
+                                                                        className="text-left p-2 min-w-[150px]"
+                                                                    >
+                                                                        <TooltipProvider>
+                                                                            <Tooltip>
+                                                                                <TooltipTrigger className="text-left truncate max-w-[120px] block">
+                                                                                    {attr.name}
+                                                                                </TooltipTrigger>
+                                                                                <TooltipContent>
+                                                                                    {attr.name}
+                                                                                </TooltipContent>
+                                                                            </Tooltip>
+                                                                        </TooltipProvider>
+                                                                    </th>
+                                                                ))}
+                                                                <th className="text-left p-2 w-[80px]">Actions</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            {variant.sizes.map(size => {
+                                                                const key = `${variant.id}_${size.id}`
+                                                                const expanded = !!expandedSizeRows[key]
+                                                                return (
+                                                                    <tr key={size.id} className="border-b hover:bg-muted/50">
+                                                                        <td className="p-2 font-medium">{size.size}</td>
+                                                                        <td className="p-2">
+                                                                            <Input
+                                                                                className="h-8 text-sm"
+                                                                                value={size.sku}
+                                                                                onChange={(e) => updateSizeInVariant(variant.id, size.id, { sku: e.target.value })}
+                                                                                placeholder="SKU"
+                                                                            />
+                                                                        </td>
+                                                                        <td className="p-2">
+                                                                            <Input
+                                                                                className="h-8 text-sm"
+                                                                                type="number"
+                                                                                step="0.01"
+                                                                                value={size.priceModifier}
+                                                                                onChange={(e) => updateSizeInVariant(variant.id, size.id, { priceModifier: Number(e.target.value) })}
+                                                                                placeholder="0.00"
+                                                                            />
+                                                                        </td>
+                                                                        <td className="p-2 font-medium">
+                                                                            ${(Number(form.watch("price") || 0) + Number(size.priceModifier || 0)).toFixed(2)}
+                                                                        </td>
+                                                                        <td className="p-2">
+                                                                            <Input
+                                                                                className="h-8 text-sm"
+                                                                                type="number"
+                                                                                
+                                                                                value={size.stock}
+                                                                                onChange={(e) => updateSizeInVariant(variant.id, size.id, { stock: Number(e.target.value) })}
+                                                                                placeholder="0"
+                                                                            />
+                                                                        </td>
+
+                                                                        {categoryAttributes.map(attr => (
+                                                                            <td key={attr.name} className="p-2 min-w-[150px]">
+                                                                                {renderAttributeInput(variant.id, size.id, attr)}
+                                                                            </td>
+                                                                        ))}
+                                                                        <td className="p-2">
+                                                                            <Button
+                                                                                type="button"
+                                                                                variant="destructive"
+                                                                                size="icon"
+                                                                                onClick={() => removeSizeFromVariant(variant.id, size.id)}
+                                                                                className="h-8 w-8"
+                                                                            >
+                                                                                <Trash2 className="h-4 w-4" />
+                                                                            </Button>
+                                                                        </td>
+                                                                    </tr>
+                                                                )
+                                                            })}
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            )}
+                                        </div> */}
+
+                                    </CardContent>
+                                </Card>
+                            ))
+                            // colorVariants.map(() => { })
+                        )}
+                        <table className="w-full min-w-[800px] border border-gray-500 rounded">
+                            <thead>
+                                <tr className="border-b border-b-gray-500">
+                                    <th className="text-left p-2 w-[100px]">Color</th>
+                                    <th className="text-left p-2 w-[100px]">Size</th>
+                                    <th className="text-left p-2 w-[150px]">SKU</th>
+                                    <th className="text-left p-2 w-[120px]">Price Modifier</th>
+                                    <th className="text-left p-2 w-[120px]">Final Price</th>
+                                    <th className="text-left p-2 w-[100px]">Stock Qty</th>
+                                    {categoryAttributes.map((attr) => (
+                                        <th
+                                            key={attr.name}
+                                            className="text-left p-2 min-w-[150px]"
+                                        >
+                                            <TooltipProvider>
+                                                <Tooltip>
+                                                    <TooltipTrigger className="text-left truncate max-w-[120px] block">
+                                                        {attr.name}
+                                                    </TooltipTrigger>
+                                                    <TooltipContent>
+                                                        {attr.name}
+                                                    </TooltipContent>
+                                                </Tooltip>
+                                            </TooltipProvider>
+                                        </th>
+                                    ))}
+                                    <th className="text-left p-2 w-[80px]">Actions</th>
+                                </tr>
+                            </thead>
+
+                            <tbody>
+                                {colorVariants.map((variant) =>
+                                    variant.sizes.map((size) => {
+                                        const key = `${variant.id}_${size.id}`;
+                                        const expanded = !!expandedSizeRows[key];
+                                        return (
+                                            <tr key={key} className="border-b hover:bg-muted/50">
+                                                <td className="p-2 font-medium">{variant.color}</td>
+                                                <td className="p-2 font-medium">{size.size}</td>
+                                                <td className="p-2">
+                                                    <Input
+                                                        className="h-8 text-sm"
+                                                        value={size.sku}
+                                                        onChange={(e) =>
+                                                            updateSizeInVariant(variant.id, size.id, {
+                                                                sku: e.target.value,
+                                                            })
+                                                        }
+                                                        placeholder="SKU"
+                                                    />
+                                                </td>
+                                                <td className="p-2">
+                                                    <Input
+                                                        className="h-8 text-sm"
+                                                        type="number"
+                                                        step="0.01"
+                                                        value={size.priceModifier}
+                                                        onChange={(e) =>
+                                                            updateSizeInVariant(variant.id, size.id, {
+                                                                priceModifier: Number(e.target.value),
+                                                            })
+                                                        }
+                                                        placeholder="0.00"
+                                                    />
+                                                </td>
+                                                <td className="p-2 font-medium">
+                                                    $
+                                                    {(
+                                                        Number(form.watch("price") || 0) +
+                                                        Number(size.priceModifier || 0)
+                                                    ).toFixed(2)}
+                                                </td>
+                                                <td className="p-2">
+                                                    <Input
+                                                        className="h-8 text-sm"
+                                                        type="number"
+
+                                                        value={size.stock}
+                                                        onChange={(e) =>
+                                                            updateSizeInVariant(variant.id, size.id, {
+                                                                stock: Number(e.target.value),
+                                                            })
+                                                        }
+                                                        placeholder="0"
+                                                    />
+                                                </td>
+
+                                                {categoryAttributes.map((attr) => (
+                                                    <td key={attr.name} className="p-2 min-w-[150px]">
+                                                        {renderAttributeInput(variant.id, size.id, attr)}
+                                                    </td>
+                                                ))}
+
+                                                <td className="p-2">
+                                                    <Button
+                                                        type="button"
+                                                        variant="destructive"
+                                                        size="icon"
+                                                        onClick={() =>
+                                                            removeSizeFromVariant(variant.id, size.id)
+                                                        }
+                                                        className="h-8 w-8"
+                                                    >
+                                                        <Trash2 className="h-4 w-4" />
+                                                    </Button>
+                                                </td>
+                                            </tr>
+                                        );
+                                    })
+                                )}
+                            </tbody>
+                        </table>
+
+                        {/* {colorVariants.map((variant, index) => (<div>
+                            <Label>Size Matrix {variant.color}</Label>
+
+                            {variant.sizes.length === 0 ? (
+                                <div className="text-sm text-muted-foreground p-4 border rounded">No sizes selected for this color.</div>
+                            ) : (
+                                <div className="mt-2 border rounded-lg overflow-x-auto">
+                                    <table className="w-full min-w-[800px]">
+                                        <thead>
+                                            <tr className="border-b">
+                                                <th className="text-left p-2 w-[100px]">Color</th>
+                                                <th className="text-left p-2 w-[100px]">Size</th>
+                                                <th className="text-left p-2 w-[150px]">SKU</th>
+                                                <th className="text-left p-2 w-[120px]">Price Modifier</th>
+                                                <th className="text-left p-2 w-[120px]">Final Price</th>
+                                                <th className="text-left p-2 w-[100px]">Stock Qty</th>
+                                                {categoryAttributes.map((attr) => (
+                                                    <th
+                                                        key={attr.name}
+                                                        className="text-left p-2 min-w-[150px]"
+                                                    >
+                                                        <TooltipProvider>
+                                                            <Tooltip>
+                                                                <TooltipTrigger className="text-left truncate max-w-[120px] block">
+                                                                    {attr.name}
+                                                                </TooltipTrigger>
+                                                                <TooltipContent>
+                                                                    {attr.name}
+                                                                </TooltipContent>
+                                                            </Tooltip>
+                                                        </TooltipProvider>
+                                                    </th>
+                                                ))}
+                                                <th className="text-left p-2 w-[80px]">Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {variant.sizes.map(size => {
+                                                const key = `${variant.id}_${size.id}`
+                                                const expanded = !!expandedSizeRows[key]
+                                                return (
+                                                    <tr key={size.id} className="border-b hover:bg-muted/50">
+
+                                                        <td className="p-2 font-medium">{variant.color}</td>
+                                                        <td className="p-2 font-medium">{size.size}</td>
+                                                        <td className="p-2">
+                                                            <Input
+                                                                className="h-8 text-sm"
+                                                                value={size.sku}
+                                                                onChange={(e) => updateSizeInVariant(variant.id, size.id, { sku: e.target.value })}
+                                                                placeholder="SKU"
+                                                            />
+                                                        </td>
+                                                        <td className="p-2">
+                                                            <Input
+                                                                className="h-8 text-sm"
+                                                                type="number"
+                                                                step="0.01"
+                                                                value={size.priceModifier}
+                                                                onChange={(e) => updateSizeInVariant(variant.id, size.id, { priceModifier: Number(e.target.value) })}
+                                                                placeholder="0.00"
+                                                            />
+                                                        </td>
+                                                        <td className="p-2 font-medium">
+                                                            ${(Number(form.watch("price") || 0) + Number(size.priceModifier || 0)).toFixed(2)}
+                                                        </td>
+                                                        <td className="p-2">
+                                                            <Input
+                                                                className="h-8 text-sm"
+                                                                type="number"
+                                                                
+                                                                value={size.stock}
+                                                                onChange={(e) => updateSizeInVariant(variant.id, size.id, { stock: Number(e.target.value) })}
+                                                                placeholder="0"
+                                                            />
+                                                        </td>
+
+                                                        {categoryAttributes.map(attr => (
+                                                            <td key={attr.name} className="p-2 min-w-[150px]">
+                                                                {renderAttributeInput(variant.id, size.id, attr)}
+                                                            </td>
+                                                        ))}
+                                                        <td className="p-2">
+                                                            <Button
+                                                                type="button"
+                                                                variant="destructive"
+                                                                size="icon"
+                                                                onClick={() => removeSizeFromVariant(variant.id, size.id)}
+                                                                className="h-8 w-8"
+                                                            >
+                                                                <Trash2 className="h-4 w-4" />
+                                                            </Button>
+                                                        </td>
+                                                    </tr>
+                                                )
+                                            })}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            )}
+                        </div>))} */}
+                    </div>
+                </CardContent>
+            </Card>
+        </div >
     )
 
     const renderPricingTab = () => (
@@ -517,12 +1325,12 @@ export default function AddProductPage() {
             <CardContent className="space-y-6">
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     <div className="space-y-2">
-                        <Label htmlFor="price">Selling Price *</Label>
+                        <Label htmlFor="price">Base Price *</Label>
                         <Input
                             id="price"
                             type="number"
                             step="0.01"
-                            min="0"
+
                             {...form.register("price", { valueAsNumber: true })}
                             placeholder="0.00"
                         />
@@ -537,7 +1345,7 @@ export default function AddProductPage() {
                             id="compare_price"
                             type="number"
                             step="0.01"
-                            min="0"
+
                             {...form.register("compare_price", { valueAsNumber: true })}
                             placeholder="0.00"
                         />
@@ -549,12 +1357,58 @@ export default function AddProductPage() {
                             id="cost_price"
                             type="number"
                             step="0.01"
-                            min="0"
+
                             {...form.register("cost_price", { valueAsNumber: true })}
                             placeholder="0.00"
                         />
                     </div>
                 </div>
+
+                {colorVariants.length > 0 && (
+                    <div className="mt-6">
+                        <Label>Variant Pricing</Label>
+                        <div className="mt-2 border rounded-lg overflow-x-auto">
+                            <table className="w-full min-w-[600px]">
+                                <thead>
+                                    <tr className="border-b">
+                                        <th className="text-left p-2">Color</th>
+                                        <th className="text-left p-2">Size</th>
+                                        <th className="text-left p-2">Price Modifier</th>
+                                        <th className="text-left p-2">Final Price</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {colorVariants.map(variant =>
+                                        variant.sizes.map(size => (
+                                            <tr key={size.id} className="border-b hover:bg-muted/50">
+                                                <td className="p-2">
+                                                    <div className="flex items-center gap-2">
+                                                        <div
+                                                            className="w-5 h-5 rounded-full border"
+                                                            style={{
+                                                                backgroundColor: variant.color.toLowerCase() === 'white' ? '#fff' : variant.color.toLowerCase() === 'black' ? '#000' : variant.color
+                                                            }}
+                                                        ></div>
+                                                        <span className="truncate max-w-[120px]">{variant.color}</span>
+                                                    </div>
+                                                </td>
+                                                <td className="p-2 font-medium">
+                                                    {size.size}
+                                                </td>
+                                                <td className="p-2">
+                                                    {size.priceModifier ?? 0 > 0 ? `+${size.priceModifier?.toFixed(2)}` : size.priceModifier?.toFixed(2)}
+                                                </td>
+                                                <td className="p-2 font-medium">
+                                                    ${(form.watch("price") + size.priceModifier ?? 0).toFixed(2)}
+                                                </td>
+                                            </tr>
+                                        ))
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                )}
             </CardContent>
         </Card>
     )
@@ -570,25 +1424,11 @@ export default function AddProductPage() {
             <CardContent className="space-y-6">
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     <div className="space-y-2">
-                        <Label htmlFor="quantity">Stock Quantity</Label>
-                        <Input
-                            id="quantity"
-                            type="number"
-                            min="0"
-                            {...form.register("stock.quantity", { valueAsNumber: true })}
-                            placeholder="0"
-                        />
-                        {form.formState.errors?.stock?.quantity && (
-                            <p className="text-sm text-destructive">{form.formState.errors.stock.quantity.message}</p>
-                        )}
-                    </div>
-
-                    <div className="space-y-2">
                         <Label htmlFor="low_stock_threshold">Low Stock Alert</Label>
                         <Input
                             id="low_stock_threshold"
                             type="number"
-                            min="0"
+
                             {...form.register("stock.low_stock_threshold", { valueAsNumber: true })}
                             placeholder="10"
                         />
@@ -601,7 +1441,7 @@ export default function AddProductPage() {
                 <Separator />
 
                 <div className="space-y-4">
-                    <div className="flex items-center justify-between">
+                    <div className="flex items-center justify-between py-2">
                         <div>
                             <Label>Track Inventory</Label>
                             <p className="text-sm text-muted-foreground">Monitor stock levels for this product</p>
@@ -612,7 +1452,7 @@ export default function AddProductPage() {
                         />
                     </div>
 
-                    <div className="flex items-center justify-between">
+                    <div className="flex items-center justify-between py-2">
                         <div>
                             <Label>Allow Backorder</Label>
                             <p className="text-sm text-muted-foreground">Accept orders when out of stock</p>
@@ -623,220 +1463,54 @@ export default function AddProductPage() {
                         />
                     </div>
                 </div>
+
+                {colorVariants.length > 0 && (
+                    <div className="mt-6">
+                        <Label>Variant Stock</Label>
+                        <div className="mt-2 border rounded-lg overflow-x-auto">
+                            <table className="w-full min-w-[600px]">
+                                <thead>
+                                    <tr className="border-b">
+                                        <th className="text-left p-2">Color</th>
+                                        <th className="text-left p-2">Size</th>
+                                        <th className="text-left p-2">SKU</th>
+                                        <th className="text-left p-2">Stock Quantity</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {colorVariants.map(variant =>
+                                        variant.sizes.map(size => (
+                                            <tr key={size.id} className="border-b hover:bg-muted/50">
+                                                <td className="p-2">
+                                                    <div className="flex items-center gap-2">
+                                                        <div
+                                                            className="w-5 h-5 rounded-full border"
+                                                            style={{
+                                                                backgroundColor: variant.color.toLowerCase() === 'white' ? '#fff' : variant.color.toLowerCase() === 'black' ? '#000' : variant.color
+                                                            }}
+                                                        ></div>
+                                                        <span className="truncate max-w-[120px]">{variant.color}</span>
+                                                    </div>
+                                                </td>
+                                                <td className="p-2 font-medium">
+                                                    {size.size}
+                                                </td>
+                                                <td className="p-2 truncate max-w-[120px]">
+                                                    {size.sku || "N/A"}
+                                                </td>
+                                                <td className="p-2">
+                                                    {size.stock}
+                                                </td>
+                                            </tr>
+                                        ))
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                )}
             </CardContent>
         </Card>
-    )
-
-    const renderAttributesTab = () => (
-        <div className="space-y-6">
-            <Card>
-                <CardHeader>
-                    <CardTitle>Product Attributes</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                    {Object.keys(attributes).length > 0 && (
-                        <div className="space-y-2">
-                            {Object.entries(attributes).map(([key, value]) => (
-                                <div key={key} className="flex items-center justify-between p-2 bg-muted rounded">
-                                    <div className="flex items-center gap-2">
-                                        <Badge variant="outline">{key}</Badge>
-                                        <span>{String(value)}</span>
-                                    </div>
-                                    <Button
-                                        type="button"
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={() => removeAttribute(key)}
-                                    >
-                                        <Trash2 className="h-4 w-4" />
-                                    </Button>
-                                </div>
-                            ))}
-                        </div>
-                    )}
-
-                    <div className="flex gap-2">
-                        <Input
-                            value={newAttribute.key}
-                            onChange={(e) => setNewAttribute(prev => ({ ...prev, key: e.target.value }))}
-                            placeholder="Attribute name"
-                        />
-                        <Input
-                            value={newAttribute.value}
-                            onChange={(e) => setNewAttribute(prev => ({ ...prev, value: e.target.value }))}
-                            placeholder="Attribute value"
-                        />
-                        <Button type="button" onClick={addAttribute} variant="outline">
-                            <Plus className="h-4 w-4" />
-                        </Button>
-                    </div>
-                </CardContent>
-            </Card>
-
-            <Card>
-                <CardHeader>
-                    <CardTitle>Product Specifications</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                    {Object.keys(specifications).length > 0 && (
-                        <div className="space-y-2">
-                            {Object.entries(specifications).map(([key, value]) => (
-                                <div key={key} className="flex items-center justify-between p-2 bg-muted rounded">
-                                    <div className="flex items-center gap-2">
-                                        <Badge variant="outline">{key}</Badge>
-                                        <span>{String(value)}</span>
-                                    </div>
-                                    <Button
-                                        type="button"
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={() => removeSpecification(key)}
-                                    >
-                                        <Trash2 className="h-4 w-4" />
-                                    </Button>
-                                </div>
-                            ))}
-                        </div>
-                    )}
-
-                    <div className="flex gap-2">
-                        <Input
-                            value={newSpecification.key}
-                            onChange={(e) => setNewSpecification(prev => ({ ...prev, key: e.target.value }))}
-                            placeholder="Specification name"
-                        />
-                        <Input
-                            value={newSpecification.value}
-                            onChange={(e) => setNewSpecification(prev => ({ ...prev, value: e.target.value }))}
-                            placeholder="Specification value"
-                        />
-                        <Button type="button" onClick={addSpecification} variant="outline">
-                            <Plus className="h-4 w-4" />
-                        </Button>
-                    </div>
-                </CardContent>
-            </Card>
-
-            <Card>
-                <CardHeader>
-                    <CardTitle>Product Variants</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                    {variants.length > 0 && (
-                        <div className="space-y-4">
-                            {variants.map((variant, index) => (
-                                <div key={index} className="border rounded-lg p-4">
-                                    <div className="flex items-center justify-between mb-2">
-                                        <h4 className="font-medium">{variant.name}</h4>
-                                        <Button
-                                            type="button"
-                                            variant="ghost"
-                                            size="sm"
-                                            onClick={() => removeVariant(index)}
-                                        >
-                                            <Trash2 className="h-4 w-4" />
-                                        </Button>
-                                    </div>
-                                    <div className="flex flex-wrap gap-2 mb-2">
-                                        {variant.options.map((option, optIndex) => (
-                                            <Badge key={optIndex} variant="secondary">
-                                                {option}
-                                            </Badge>
-                                        ))}
-                                    </div>
-                                    <div className="grid grid-cols-3 gap-2 text-sm text-muted-foreground">
-                                        <span>Price Modifier: ${variant.price_modifier || 0}</span>
-                                        <span>Stock: {variant.stock_quantity || 0}</span>
-                                        <span>SKU: {variant.sku || "N/A"}</span>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    )}
-
-                    <div className="border rounded-lg p-4 space-y-4">
-                        <h4 className="font-medium">Add New Variant</h4>
-
-                        <div className="space-y-2">
-                            <Label>Variant Name</Label>
-                            <Input
-                                value={newVariant.name}
-                                onChange={(e) => setNewVariant(prev => ({ ...prev, name: e.target.value }))}
-                                placeholder="e.g., Size, Color, Style"
-                            />
-                        </div>
-
-                        <div className="space-y-2">
-                            <Label>Options</Label>
-                            <div className="flex gap-2">
-                                <Input
-                                    value={newVariantOption}
-                                    onChange={(e) => setNewVariantOption(e.target.value)}
-                                    placeholder="Add option"
-                                    onKeyPress={(e) => e.key === "Enter" && (e.preventDefault(), addVariantOption())}
-                                />
-                                <Button type="button" onClick={addVariantOption} variant="outline">
-                                    <Plus className="h-4 w-4" />
-                                </Button>
-                            </div>
-                            {newVariant.options.length > 0 && (
-                                <div className="flex flex-wrap gap-2">
-                                    {newVariant.options.map((option, index) => (
-                                        <Badge key={index} variant="secondary" className="flex items-center gap-1">
-                                            {option}
-                                            <X
-                                                className="h-3 w-3 cursor-pointer"
-                                                onClick={() => removeVariantOption(option)}
-                                            />
-                                        </Badge>
-                                    ))}
-                                </div>
-                            )}
-                        </div>
-
-                        <div className="grid grid-cols-3 gap-4">
-                            <div className="space-y-2">
-                                <Label>Price Modifier</Label>
-                                <Input
-                                    type="number"
-                                    step="0.01"
-                                    value={newVariant.price_modifier}
-                                    onChange={(e) => setNewVariant(prev => ({ ...prev, price_modifier: Number(e.target.value) }))}
-                                    placeholder="0.00"
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <Label>Stock Quantity</Label>
-                                <Input
-                                    type="number"
-                                    min="0"
-                                    value={newVariant.stock_quantity}
-                                    onChange={(e) => setNewVariant(prev => ({ ...prev, stock_quantity: Number(e.target.value) }))}
-                                    placeholder="0"
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <Label>SKU</Label>
-                                <Input
-                                    value={newVariant.sku}
-                                    onChange={(e) => setNewVariant(prev => ({ ...prev, sku: e.target.value }))}
-                                    placeholder="Variant SKU"
-                                />
-                            </div>
-                        </div>
-
-                        <Button
-                            type="button"
-                            onClick={addVariant}
-                            disabled={!newVariant.name.trim() || newVariant.options.length === 0}
-                            className="w-full"
-                        >
-                            Add Variant
-                        </Button>
-                    </div>
-                </CardContent>
-            </Card>
-        </div>
     )
 
     const renderShippingTab = () => (
@@ -854,7 +1528,7 @@ export default function AddProductPage() {
                         id="weight"
                         type="number"
                         step="0.01"
-                        min="0"
+
                         {...form.register("shipping.weight", { valueAsNumber: true })}
                         placeholder="0.00"
                     />
@@ -871,40 +1545,36 @@ export default function AddProductPage() {
                             <Input
                                 type="number"
                                 step="0.01"
-                                min="0"
+
                                 {...form.register("shipping.dimensions.length", { valueAsNumber: true })}
                                 placeholder="Length"
                             />
-                            {form.formState.errors?.shipping?.dimensions?.length && (
-                                <p className="text-sm text-destructive">{form.formState.errors.shipping.dimensions?.length.message}</p>
-                            )}
                         </div>
                         <div className="space-y-2">
                             <Label className="text-sm">Width</Label>
                             <Input
                                 type="number"
                                 step="0.01"
-                                min="0"
+
                                 {...form.register("shipping.dimensions.width", { valueAsNumber: true })}
                                 placeholder="Width"
                             />
-                            {form.formState.errors?.shipping?.dimensions?.width && (
-                                <p className="text-sm text-destructive">{form.formState.errors.shipping.dimensions?.width.message}</p>
-                            )}
                         </div>
                         <div className="space-y-2">
                             <Label className="text-sm">Height</Label>
                             <Input
                                 type="number"
                                 step="0.01"
-                                min="0"
+
                                 {...form.register("shipping.dimensions.height", { valueAsNumber: true })}
                                 placeholder="Height"
                             />
-                            {form.formState.errors?.shipping?.dimensions?.height && (
-                                <p className="text-sm text-destructive">{form.formState.errors.shipping.dimensions?.height.message}</p>
-                            )}
                         </div>
+                    </div>
+                    <div className="text-xs text-muted-foreground mt-2">
+                        {form.formState.errors?.shipping?.dimensions?.length?.message ||
+                            form.formState.errors?.shipping?.dimensions?.width?.message ||
+                            form.formState.errors?.shipping?.dimensions?.height?.message}
                     </div>
                 </div>
             </CardContent>
@@ -955,10 +1625,10 @@ export default function AddProductPage() {
                     {seoKeywords.length > 0 && (
                         <div className="flex flex-wrap gap-2">
                             {seoKeywords.map((keyword, index) => (
-                                <Badge key={index} variant="secondary" className="flex items-center gap-1">
-                                    {keyword}
+                                <Badge key={index} variant="secondary" className="flex items-center gap-1 py-1">
+                                    <span className="max-w-[120px] truncate">{keyword}</span>
                                     <X
-                                        className="h-3 w-3 cursor-pointer"
+                                        className="h-3 w-3 cursor-pointer text-muted-foreground hover:text-foreground"
                                         onClick={() => removeKeyword(keyword)}
                                     />
                                 </Badge>
@@ -999,7 +1669,7 @@ export default function AddProductPage() {
                 <Separator />
 
                 <div className="space-y-4">
-                    <div className="flex items-center justify-between">
+                    <div className="flex items-center justify-between py-2">
                         <div>
                             <Label>Active Status</Label>
                             <p className="text-sm text-muted-foreground">Make this product available for purchase</p>
@@ -1010,7 +1680,7 @@ export default function AddProductPage() {
                         />
                     </div>
 
-                    <div className="flex items-center justify-between">
+                    <div className="flex items-center justify-between py-2">
                         <div>
                             <Label>Featured Product</Label>
                             <p className="text-sm text-muted-foreground">Show this product in featured sections</p>
@@ -1025,20 +1695,40 @@ export default function AddProductPage() {
         </Card>
     )
 
+    const tabs = [
+        { value: "basic", label: "Basic", icon: Info },
+        { value: "color-variants", label: "Variants", icon: ImageIcon },
+        { value: "pricing", label: "Pricing", icon: DollarSign },
+        { value: "inventory", label: "Inventory", icon: BarChart3 },
+        { value: "shipping", label: "Shipping", icon: Truck },
+        { value: "seo", label: "SEO", icon: Search },
+        { value: "advanced", label: "Advanced", icon: Settings },
+    ]
+
+    if (loading) {
+        return (
+            <div className="min-h-screen flex items-center justify-center">
+                <div className="flex flex-col items-center gap-4">
+                    <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+                    <p>Loading product data...</p>
+                </div>
+            </div>
+        )
+    }
+
     return (
         <div className="min-h-screen bg-background">
-            {/* Header */}
             <div className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50">
                 <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="flex items-center justify-between h-16">
-                        <div className="flex items-center gap-4">
-                            <div>
-                                <h1 className="text-xl font-semibold">Create New Product</h1>
-                                <p className="text-sm text-muted-foreground">Add a new product to your store</p>
-                            </div>
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 py-4">
+                        <div>
+                            <h1 className="text-xl font-semibold">{isEdit ? "Edit Product" : "Create New Product"}</h1>
+                            <p className="text-sm text-muted-foreground">
+                                {isEdit ? "Update your product details" : "Add a new product to your store"}
+                            </p>
                         </div>
 
-                        <div className="flex items-center gap-3">
+                        <div className="flex flex-wrap gap-3">
                             <Button
                                 variant="outline"
                                 onClick={() => router.push("/products")}
@@ -1047,14 +1737,13 @@ export default function AddProductPage() {
                                 Cancel
                             </Button>
                             <Button
-                                type="submit"
-                                form="product-form"
+                                onClick={form.handleSubmit(onSubmit)}
                                 disabled={loading}
                                 className="flex items-center gap-2"
                             >
                                 {loading && <div className="h-4 w-4 animate-spin rounded-full border-2 border-b-transparent" />}
                                 <Save className="h-4 w-4" />
-                                Create Product
+                                {isEdit ? "Update Product" : "Create Product"}
                             </Button>
                         </div>
                     </div>
@@ -1062,68 +1751,60 @@ export default function AddProductPage() {
             </div>
 
             <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                <form
-                    id="product-form"
-                    onSubmit={form.handleSubmit(onSubmit)}
-                    className="space-y-8"
-                >
-                    <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                        <TabsList className="grid w-full grid-cols-7">
-                            <TabsTrigger value="basic" className="flex items-center gap-2">
-                                <Info className="h-4 w-4" />
-                                Basic
-                            </TabsTrigger>
-                            <TabsTrigger value="pricing" className="flex items-center gap-2">
-                                <DollarSign className="h-4 w-4" />
-                                Pricing
-                            </TabsTrigger>
-                            <TabsTrigger value="inventory" className="flex items-center gap-2">
-                                <BarChart3 className="h-4 w-4" />
-                                Inventory
-                            </TabsTrigger>
-                            <TabsTrigger value="attributes" className="flex items-center gap-2">
-                                <Tag className="h-4 w-4" />
-                                Attributes
-                            </TabsTrigger>
-                            <TabsTrigger value="shipping" className="flex items-center gap-2">
-                                <Truck className="h-4 w-4" />
-                                Shipping
-                            </TabsTrigger>
-                            <TabsTrigger value="seo" className="flex items-center gap-2">
-                                <Search className="h-4 w-4" />
-                                SEO
-                            </TabsTrigger>
-                            <TabsTrigger value="advanced" className="flex items-center gap-2">
-                                <Settings className="h-4 w-4" />
-                                Advanced
-                            </TabsTrigger>
+                <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+                    <div className="overflow-x-auto pb-2">
+                        <TabsList className="flex w-full">
+                            {tabs.map((tab) => (
+                                <TabsTrigger
+                                    key={tab.value}
+                                    value={tab.value}
+                                    className="flex items-center gap-2 whitespace-nowrap"
+                                >
+                                    <tab.icon className="h-4 w-4" />
+                                    {tab.label}
+                                </TabsTrigger>
+                            ))}
                         </TabsList>
+                    </div>
 
-                        <div className="mt-8">
-                            <TabsContent value="basic">
-                                {renderBasicTab()}
-                            </TabsContent>
-                            <TabsContent value="pricing">
-                                {renderPricingTab()}
-                            </TabsContent>
-                            <TabsContent value="inventory">
-                                {renderInventoryTab()}
-                            </TabsContent>
-                            <TabsContent value="attributes">
-                                {renderAttributesTab()}
-                            </TabsContent>
-                            <TabsContent value="shipping">
-                                {renderShippingTab()}
-                            </TabsContent>
-                            <TabsContent value="seo">
-                                {renderSEOTab()}
-                            </TabsContent>
-                            <TabsContent value="advanced">
-                                {renderAdvancedTab()}
-                            </TabsContent>
-                        </div>
-                    </Tabs>
-                </form>
+                    <div className="mt-6">
+                        <TabsContent value="basic">
+                            {/* <ScrollArea className="h-[calc(100vh-200px)] pr-4"> */}
+                            {renderBasicTab()}
+                            {/* </ScrollArea> */}
+                        </TabsContent>
+                        <TabsContent value="color-variants">
+                            {/* <ScrollArea className="h-[calc(100vh-200px)] pr-4"> */}
+                            {renderColorVariantsTab()}
+                            {/* </ScrollArea> */}
+                        </TabsContent>
+                        <TabsContent value="pricing">
+                            {/* <ScrollArea className="h-[calc(100vh-200px)] pr-4"> */}
+                            {renderPricingTab()}
+                            {/* </ScrollArea> */}
+                        </TabsContent>
+                        <TabsContent value="inventory">
+                            {/* <ScrollArea className="h-[calc(100vh-200px)] pr-4"> */}
+                            {renderInventoryTab()}
+                            {/* </ScrollArea> */}
+                        </TabsContent>
+                        <TabsContent value="shipping">
+                            {/* <ScrollArea className="h-[calc(100vh-200px)] pr-4"> */}
+                            {renderShippingTab()}
+                            {/* </ScrollArea> */}
+                        </TabsContent>
+                        <TabsContent value="seo">
+                            {/* <ScrollArea className="h-[calc(100vh-200px)] pr-4"> */}
+                            {renderSEOTab()}
+                            {/* </ScrollArea> */}
+                        </TabsContent>
+                        <TabsContent value="advanced">
+                            {/* <ScrollArea className="h-[calc(100vh-200px)] pr-4"> */}
+                            {renderAdvancedTab()}
+                            {/* </ScrollArea> */}
+                        </TabsContent>
+                    </div>
+                </Tabs>
             </div>
         </div>
     )

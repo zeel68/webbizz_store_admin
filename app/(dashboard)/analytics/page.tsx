@@ -116,7 +116,7 @@ export default function AnalyticsPage() {
         description?: string
         color?: "default" | "success" | "warning" | "danger"
     }) => (
-        <Card className={`hover:shadow-lg transition-all duration-200 ${color === "success" ? "border-green-200 bg-green-50/50" :
+        <Card className={`hover:shadow-lg transition-all duration-200 ${color === "success" ? "border-green-200 bg-green-200/50" :
             color === "warning" ? "border-orange-200 bg-orange-50/50" :
                 color === "danger" ? "border-red-200 bg-red-50/50" :
                     "hover:border-primary/20"

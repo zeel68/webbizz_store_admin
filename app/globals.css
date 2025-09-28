@@ -9,6 +9,45 @@ body {
     height: 100%;
 }
 
+/* Add to your global CSS file (e.g., globals.css) */
+/* Add to your global CSS file (globals.css) */
+@media print {
+    body {
+        margin: 0;
+        padding: 0;
+        background: white;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+
+    .invoice-container {
+        position: relative;
+        width: 210mm;
+        min-height: 297mm;
+        margin: 0 auto;
+        padding: 0;
+        box-shadow: none;
+        background: white;
+    }
+
+    .no-print {
+        display: none !important;
+    }
+
+    @page {
+        size: A4;
+        margin: 0;
+    }
+
+    .page-number:after {
+        content: counter(page);
+    }
+
+    body {
+        counter-reset: page;
+    }
+}
+
 :root {
     --background: oklch(1 0 0);
     --foreground: oklch(0.32 0 0);

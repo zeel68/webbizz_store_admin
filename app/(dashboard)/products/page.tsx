@@ -283,7 +283,7 @@ export default function ProductsPage() {
             </div>
 
             {/* Stats Cards */}
-            {stats && (
+            {/* {stats && (
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                     <Card>
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -337,7 +337,7 @@ export default function ProductsPage() {
                         </CardContent>
                     </Card>
                 </div>
-            )}
+            )} */}
 
             <Card className="border-0 shadow-md">
                 <CardHeader>

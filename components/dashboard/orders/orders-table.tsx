@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
 import { format } from "date-fns";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
@@ -16,16 +16,19 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
-  MoreHorizontal, Eye, Edit, Truck, Search, X, CheckCircle,
+  MoreHorizontal, Eye, Download, Truck, X, CheckCircle,
   AlertCircle, Package, CreditCard, Clock, XCircle, Loader2,
-  MapPin,
-  Phone
+  MapPin, Phone, Printer,
+  Search
 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useOrderStore } from "@/store/orderStore";
 import { toast } from "sonner";
 import { formatCurrency } from "@/lib/utils";
+import { QRCodeSVG } from 'qrcode.react';
+import html2canvas from 'html2canvas';
+import jsPDF from 'jspdf';
 
 const statusColors = {
   pending: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400",
@@ -64,15 +67,15 @@ interface OrderTableProps {
 
 export function OrdersTable({ orders, isLoading }: OrderTableProps) {
   const { updateOrderStatus, loading: storeLoading } = useOrderStore();
-
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [paymentFilter, setPaymentFilter] = useState("");
-
   const [viewingOrder, setViewingOrder] = useState<any | null>(null);
   const [updatingOrder, setUpdatingOrder] = useState<any | null>(null);
   const [newStatus, setNewStatus] = useState("");
   const [trackingNumber, setTrackingNumber] = useState("");
+  const [isGeneratingInvoice, setIsGeneratingInvoice] = useState(false);
+  const invoiceRef = useRef<HTMLDivElement>(null);
 
   const filteredOrders = useMemo(() => {
     return orders.filter((order) => {
@@ -113,6 +116,82 @@ export function OrdersTable({ orders, isLoading }: OrderTableProps) {
 
   const formatDate = (date: string) => {
     return date ? format(new Date(date), "MMM dd, yyyy hh:mm a") : "—";
+  };
+
+  const downloadInvoice = async (order: any) => {
+    setViewingOrder(order);
+    setIsGeneratingInvoice(true);
+
+    try {
+      // Wait for the component to re-render with the invoice content
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      if (!invoiceRef.current) {
+        toast.error("Invoice content not available");
+        return;
+      }
+
+      const canvas = await html2canvas(invoiceRef.current, {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+      });
+
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const imgWidth = 210;
+      const pageHeight = 297;
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      let heightLeft = imgHeight;
+      let position = 0;
+
+      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+      heightLeft -= pageHeight;
+
+      while (heightLeft >= 0) {
+        position = heightLeft - imgHeight;
+        pdf.addPage();
+        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+        heightLeft -= pageHeight;
+      }
+
+      pdf.save(`invoice_${order.order_number || order._id.slice(-8)}.pdf`);
+    } catch (error) {
+      console.error('Error generating invoice:', error);
+      toast.error('Failed to generate invoice');
+    } finally {
+      setIsGeneratingInvoice(false);
+    }
+  };
+
+  const printInvoice = () => {
+    window.print();
+  };
+
+  const renderShippingAddress = (order: any) => {
+    if (!order.shipping_address) return null;
+
+    if (typeof order.shipping_address === "string") {
+      return <p className="text-sm text-muted-foreground whitespace-pre-line">{order.shipping_address}</p>;
+    }
+
+    return (
+      <div className="text-sm text-muted-foreground space-y-1">
+        {order.shipping_address.name && <p className="font-medium">{order.shipping_address.name}</p>}
+        {order.shipping_address.street && <p>{order.shipping_address.street}</p>}
+        {(order.shipping_address.city || order.shipping_address.state || order.shipping_address.zip) && (
+          <p>
+            {order.shipping_address.city}, {order.shipping_address.state} {order.shipping_address.zip}
+          </p>
+        )}
+        {order.shipping_address.country && <p>{order.shipping_address.country}</p>}
+        {order.shipping_address.phone && (
+          <p className="flex items-center gap-1">
+            <Phone className="w-3 h-3 text-muted-foreground" /> {order.shipping_address.phone}
+          </p>
+        )}
+      </div>
+    );
   };
 
   if (isLoading) {
@@ -160,7 +239,7 @@ export function OrdersTable({ orders, isLoading }: OrderTableProps) {
       <div className="space-y-4">
         {/* Filters */}
         <div className="flex flex-wrap items-center gap-2">
-          {/* <div className="relative">
+          <div className="relative">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               placeholder="Search orders..."
@@ -168,17 +247,33 @@ export function OrdersTable({ orders, isLoading }: OrderTableProps) {
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-9 w-64"
             />
-          </div> */}
-          <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="border rounded-md p-2">
+          </div>
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="border rounded-md p-2 text-sm"
+          >
             <option value="">All Statuses</option>
-            {Object.keys(statusColors).map((s) => <option key={s} value={s}>{s}</option>)}
+            {Object.keys(statusColors).map((s) =>
+              <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>
+            )}
           </select>
-          <select value={paymentFilter} onChange={(e) => setPaymentFilter(e.target.value)} className="border rounded-md p-2">
+          <select
+            value={paymentFilter}
+            onChange={(e) => setPaymentFilter(e.target.value)}
+            className="border rounded-md p-2 text-sm"
+          >
             <option value="">All Payments</option>
-            {Object.keys(paymentStatusColors).map((s) => <option key={s} value={s}>{s}</option>)}
+            {Object.keys(paymentStatusColors).map((s) =>
+              <option key={s} value={s}>{s.replace('_', ' ').charAt(0).toUpperCase() + s.replace('_', ' ').slice(1)}</option>
+            )}
           </select>
           {(searchTerm || statusFilter || paymentFilter) && (
-            <Button variant="ghost" onClick={() => { setSearchTerm(""); setStatusFilter(""); setPaymentFilter(""); }}>
+            <Button
+              variant="ghost"
+              className="text-sm"
+              onClick={() => { setSearchTerm(""); setStatusFilter(""); setPaymentFilter(""); }}
+            >
               Clear Filters
             </Button>
           )}
@@ -226,27 +321,46 @@ export function OrdersTable({ orders, isLoading }: OrderTableProps) {
                       </Badge>
                     </TableCell>
                     <TableCell>{formatDate(order.created_at)}</TableCell>
-                    <TableCell className="text-right flex justify-end gap-1">
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button variant="outline" size="icon" onClick={() => setViewingOrder(order)}>
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>View Details</TooltipContent>
-                      </Tooltip>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="outline" size="icon">
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => openStatusDialog(order)}>
-                            <Edit className="mr-2 h-4 w-4" /> Update Status
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+                    <TableCell className="text-right">
+                      <div className="flex justify-end gap-1">
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button variant="outline" size="icon" onClick={() => setViewingOrder(order)}>
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>View Details</TooltipContent>
+                        </Tooltip>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="outline"
+                              size="icon"
+                              onClick={() => downloadInvoice(order)}
+                              disabled={isGeneratingInvoice}
+                            >
+                              {isGeneratingInvoice ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <Download className="h-4 w-4" />
+                              )}
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>Download Invoice</TooltipContent>
+                        </Tooltip>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="outline" size="icon">
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => openStatusDialog(order)}>
+                              <Truck className="mr-2 h-4 w-4" /> Update Status
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -257,7 +371,7 @@ export function OrdersTable({ orders, isLoading }: OrderTableProps) {
 
         {/* View Order Dialog */}
         <Dialog open={!!viewingOrder} onOpenChange={() => setViewingOrder(null)}>
-          <DialogContent className="max-w-2xl">
+          <DialogContent className="max-w-2xl invoice-container">
             <DialogHeader>
               <DialogTitle>Order #{viewingOrder?.order_number || viewingOrder?._id?.slice(-8)}</DialogTitle>
               <DialogDescription>Placed on {formatDate(viewingOrder?.created_at)}</DialogDescription>
@@ -270,6 +384,7 @@ export function OrdersTable({ orders, isLoading }: OrderTableProps) {
                   <p>{viewingOrder.user_id?.email || "—"}</p>
                   <p>{viewingOrder.user_id?.phone || "—"}</p>
                 </div>
+
                 <div className="border p-4 rounded">
                   <h3 className="font-medium mb-2">Items</h3>
                   {viewingOrder.items?.map((item: any, idx: number) => (
@@ -279,46 +394,44 @@ export function OrdersTable({ orders, isLoading }: OrderTableProps) {
                     </div>
                   ))}
                 </div>
+
                 <div className="border p-4 rounded">
                   <div className="flex justify-between"><span>Subtotal</span><span>{formatCurrency(viewingOrder.subtotal || 0)}</span></div>
                   <div className="flex justify-between"><span>Shipping</span><span>{formatCurrency(viewingOrder.shipping_cost || 0)}</span></div>
                   <div className="flex justify-between"><span>Tax</span><span>{formatCurrency(viewingOrder.tax_amount || 0)}</span></div>
                   <div className="flex justify-between font-bold border-t pt-2"><span>Total</span><span>{formatCurrency(viewingOrder.total || 0)}</span></div>
                 </div>
+
                 {viewingOrder.shipping_address && (
                   <div className="mt-6 rounded-lg border bg-muted/30 p-4">
                     <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
                       <MapPin className="w-4 h-4 text-muted-foreground" />
                       Shipping Address
                     </h3>
-                    {typeof viewingOrder.shipping_address === "string" ? (
-                      <p className="text-sm text-muted-foreground whitespace-pre-line">
-                        {viewingOrder.shipping_address}
-                      </p>
-                    ) : (
-                      <div className="text-sm text-muted-foreground space-y-1">
-                        {viewingOrder.shipping_address.name && <p className="font-medium">{viewingOrder.shipping_address.name}</p>}
-                        {viewingOrder.shipping_address.street && <p>{viewingOrder.shipping_address.street}</p>}
-                        {(viewingOrder.shipping_address.city || viewingOrder.shipping_address.state || viewingOrder.shipping_address.zip) && (
-                          <p>
-                            {viewingOrder.shipping_address.city}, {viewingOrder.shipping_address.state} {viewingOrder.shipping_address.zip}
-                          </p>
-                        )}
-                        {viewingOrder.shipping_address.country && <p>{viewingOrder.shipping_address.country}</p>}
-                        {viewingOrder.shipping_address.phone && (
-                          <p className="flex items-center gap-1">
-                            <Phone className="w-3 h-3 text-muted-foreground" /> {viewingOrder.shipping_address.phone}
-                          </p>
-                        )}
-                      </div>
-                    )}
+                    {renderShippingAddress(viewingOrder)}
                   </div>
                 )}
 
+                {viewingOrder.tracking_number && (
+                  <div className="rounded-lg border p-4">
+                    <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
+                      <Truck className="w-4 h-4 text-muted-foreground" />
+                      Tracking Information
+                    </h3>
+                    <p className="text-sm">Tracking Number: {viewingOrder.tracking_number}</p>
+                  </div>
+                )}
               </div>
             )}
             <DialogFooter>
-              <Button onClick={() => setViewingOrder(null)}>Close</Button>
+              <Button
+                variant="outline"
+                onClick={printInvoice}
+                className="no-print"
+              >
+                <Printer className="mr-2 h-4 w-4" /> Print Invoice
+              </Button>
+              <Button onClick={() => setViewingOrder(null)} className="no-print">Close</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
@@ -335,14 +448,26 @@ export function OrdersTable({ orders, isLoading }: OrderTableProps) {
             <div className="space-y-4">
               <div>
                 <Label htmlFor="status">Order Status</Label>
-                <select id="status" value={newStatus} onChange={(e) => setNewStatus(e.target.value)} className="w-full mt-1 p-2 border rounded-md">
-                  {Object.keys(statusColors).map((s) => <option key={s} value={s}>{s}</option>)}
+                <select
+                  id="status"
+                  value={newStatus}
+                  onChange={(e) => setNewStatus(e.target.value)}
+                  className="w-full mt-1 p-2 border rounded-md"
+                >
+                  {Object.keys(statusColors).map((s) =>
+                    <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>
+                  )}
                 </select>
               </div>
               {(newStatus === "shipped" || newStatus === "delivered") && (
                 <div>
                   <Label htmlFor="tracking">Tracking Number</Label>
-                  <Input id="tracking" value={trackingNumber} onChange={(e) => setTrackingNumber(e.target.value)} placeholder="Enter tracking number" />
+                  <Input
+                    id="tracking"
+                    value={trackingNumber}
+                    onChange={(e) => setTrackingNumber(e.target.value)}
+                    placeholder="Enter tracking number"
+                  />
                 </div>
               )}
             </div>
@@ -355,6 +480,116 @@ export function OrdersTable({ orders, isLoading }: OrderTableProps) {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+
+        {/* Hidden Invoice for PDF generation */}
+        <div className="absolute top-[-9999px] left-[-9999px]">
+          {viewingOrder && (
+            <div ref={invoiceRef} className="p-6 bg-white" style={{ width: '210mm', minHeight: '297mm' }}>
+              {/* Invoice Header */}
+              <div className="flex justify-between items-start mb-8">
+                <div>
+                  <h1 className="text-3xl font-bold">INVOICE</h1>
+                  <p className="text-gray-500">Order #{viewingOrder.order_number || viewingOrder._id.slice(-8)}</p>
+                </div>
+                <div className="text-right">
+                  <p className="font-semibold">Date: {format(new Date(viewingOrder.created_at), 'MMM dd, yyyy')}</p>
+                  <p>Status: <span className="capitalize">{viewingOrder.status}</span></p>
+                  {viewingOrder.tracking_number && <p>Tracking #: {viewingOrder.tracking_number}</p>}
+                </div>
+              </div>
+
+              {/* Customer Info */}
+              <div className="grid grid-cols-2 gap-8 mb-8">
+                <div>
+                  <h2 className="text-lg font-semibold mb-2">Bill To:</h2>
+                  <p>{viewingOrder.user_id?.name || 'Customer'}</p>
+                  <p>{viewingOrder.user_id?.email || '—'}</p>
+                  <p>{viewingOrder.user_id?.phone || '—'}</p>
+                </div>
+
+                <div>
+                  <h2 className="text-lg font-semibold mb-2">Ship To:</h2>
+                  {renderShippingAddress(viewingOrder)}
+                </div>
+              </div>
+
+              {/* Order Items */}
+              <div className="mb-8">
+                <h2 className="text-lg font-semibold mb-2">Order Items</h2>
+                <table className="w-full border-collapse">
+                  <thead>
+                    <tr className="bg-gray-100">
+                      <th className="text-left p-2 border">Product</th>
+                      <th className="text-left p-2 border">Price</th>
+                      <th className="text-left p-2 border">Qty</th>
+                      <th className="text-left p-2 border">Total</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {viewingOrder.items?.map((item: any, idx: number) => (
+                      <tr key={idx}>
+                        <td className="p-2 border">{item.product_name || item.name}</td>
+                        <td className="p-2 border">{formatCurrency(item.price)}</td>
+                        <td className="p-2 border">{item.quantity}</td>
+                        <td className="p-2 border">{formatCurrency(item.price * item.quantity)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Order Summary */}
+              <div className="ml-auto w-64">
+                <div className="flex justify-between mb-2">
+                  <span>Subtotal:</span>
+                  <span>{formatCurrency(viewingOrder.subtotal || 0)}</span>
+                </div>
+                <div className="flex justify-between mb-2">
+                  <span>Shipping:</span>
+                  <span>{formatCurrency(viewingOrder.shipping_cost || 0)}</span>
+                </div>
+                <div className="flex justify-between mb-2">
+                  <span>Tax:</span>
+                  <span>{formatCurrency(viewingOrder.tax_amount || 0)}</span>
+                </div>
+                <div className="flex justify-between font-bold text-lg border-t pt-2">
+                  <span>Total:</span>
+                  <span>{formatCurrency(viewingOrder.total || 0)}</span>
+                </div>
+              </div>
+
+              {/* Shipping Label */}
+              <div className="mt-8 p-4 border border-dashed">
+                <h3 className="font-semibold text-center mb-2">SHIPPING LABEL</h3>
+                <div className="flex">
+                  <div className="w-2/3">
+                    <p className="font-semibold">TO:</p>
+                    {renderShippingAddress(viewingOrder)}
+                  </div>
+                  <div className="w-1/3 flex flex-col items-center justify-center">
+                    <QRCodeSVG
+                      value={`${typeof window !== 'undefined' ? window.location.origin : ''}/track-order/${viewingOrder._id}`}
+                      size={96}
+                    />
+                    <p className="text-xs mt-1 text-center">Scan to track package</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Tracking QR */}
+              <div className="mt-12 pt-8 border-t text-center">
+                <h3 className="font-semibold mb-2">Scan to Track Order</h3>
+                <div className="flex justify-center">
+                  <QRCodeSVG
+                    value={`${typeof window !== 'undefined' ? window.location.origin : ''}/track-order/${viewingOrder._id}`}
+                    size={128}
+                  />
+                </div>
+                <p className="mt-2 text-sm text-gray-600">Order Tracking QR Code</p>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     </TooltipProvider>
   );

@@ -16,8 +16,8 @@ interface ProductState {
     // Actions
     fetchProducts: (filters?: iProductFilters) => Promise<void>
     fetchProductById: (id: string) => Promise<void>
-    createProduct: (data: iProductFormData, images?: File[]) => Promise<void>
-    updateProduct: (id: string, data: iProductFormData, images?: File[]) => Promise<void>
+    createProduct: (data: any, images?: File[]) => Promise<void>
+    updateProduct: (id: string, data: any) => Promise<void>
     deleteProduct: (id: string) => Promise<void>
     fetchProductStats: () => Promise<void>
     assignProductsToCategory: (prodoductsId: string[], categoryId: string) => Promise<void>
@@ -93,7 +93,7 @@ export const useProductStore = create<ProductState>()(
             },
 
             // Create new product
-            createProduct: async (data: iProductFormData) => {
+            createProduct: async (data: any) => {
                 set({ loading: true, error: null })
                 try {
 
@@ -117,10 +117,10 @@ export const useProductStore = create<ProductState>()(
             },
 
             // Update existing product
-            updateProduct: async (id: string, data: iProductFormData, images?: File[]) => {
+            updateProduct: async (id: string, data: any) => {
                 set({ loading: true, error: null })
                 try {
-
+                    console.log(data);
 
                     const response = await apiClient.put<iProduct>(`/store-admin/products/${id}`, data)
                     console.log("res", response);

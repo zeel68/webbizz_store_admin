@@ -388,7 +388,7 @@ export function CreateCouponDialog({
                   }
                   className={`${errors.value ? "border-red-500" : ""} ${formData.type === "percentage" ? "pr-8" : ""
                     }`}
-                  min="0"
+
                   step={formData.type === "percentage" ? "1" : "0.01"}
                   max={formData.type === "percentage" ? "100" : "10000"}
                   disabled={isFormDisabled || formData.type === "free_shipping"}
@@ -421,7 +421,7 @@ export function CreateCouponDialog({
                 onChange={(e) => handleInputChange("minimum_order_amount", e.target.value)}
                 placeholder="50.00"
                 className={errors.minimum_order_amount ? "border-red-500" : ""}
-                min="0"
+
                 step="0.01"
                 disabled={isFormDisabled}
               />
@@ -445,7 +445,7 @@ export function CreateCouponDialog({
                   onChange={(e) => handleInputChange("maximum_discount_amount", e.target.value)}
                   placeholder="100.00"
                   className={errors.maximum_discount_amount ? "border-red-500" : ""}
-                  min="0"
+
                   step="0.01"
                   disabled={isFormDisabled}
                 />
